@@ -20,3 +20,7 @@ jobs:
           node-version: '24'
       - run: npm test
       - run: npm run audit:bank
+      - name: Verify deployable API image
+        run: |
+          docker build --tag mbe-api-check .
+          docker run --rm mbe-api-check node --input-type=module -e "await import('./server/api.js'); console.log('API modules load successfully')"
