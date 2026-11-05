@@ -1,3 +1,4 @@
+const { routeBank } = require('./bank-fixture.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
@@ -19,12 +20,7 @@ const legacyEntry = (question, wrongCount = 2) => {
 
 async function contextWithBank(browser, questions) {
   const context = await browser.newContext();
-  const source = gzipSync(JSON.stringify(questions)).toString('base64');
-  await context.route('**/questions.txt*', route => route.fulfill({ body: source }));
-  await context.route('**/question-metadata.json*', route => route.fulfill({ json: {
-    bankSha256: createHash('sha256').update(source).digest('hex'),
-    questions: questions.map(({ id, subject, source }) => ({ id, subject, source })),
-  } }));
+  await routeBank(context, questions);
   await context.route('**/cloud-config.json*', route => route.fulfill({ json: {} }));
   return context;
 }

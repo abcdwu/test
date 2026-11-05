@@ -1,7 +1,7 @@
 import {
-  SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, QuizTimer,
+  SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
-} from './common.js?v=6';
+} from './common.js?v=7';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';
@@ -11,11 +11,14 @@ import { accuracy, createAttempt, summarizeAttempts } from './progress.js?v=5';
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
-let subject = SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : 'all';
+let subject = params.get('subject') === 'all' || SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : null;
 let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
-let bankLoading = false;
+let bankLoading = false, catalog = null, storeReady = false, preparing = false, startToken = 0;
+const knownQuestions = new Map();
+const backupLink = '<a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/">使用备用入口 →</a>';
 
 function cumulativeSummary() {
+  if (!storeReady) return '<strong id="cumulative-rate">—</strong><p class="note">正在读取累计统计…</p>';
   try {
     const total = summarizeAttempts(mistakeStore.readAttempts());
     return `<strong id="cumulative-rate">${accuracy(total.correct, total.total)}</strong>
@@ -35,13 +38,16 @@ function availableQuestions() {
 }
 
 function home() {
+  startToken++; preparing = false;
   unmountSourcePages(app);
   clearInterval(ticker);
   session = null;
   let questions = [], storageError = false;
   try { questions = fromMistakes ? mistakeStore.read().map(entry => entry.question) : bank; }
   catch { storageError = true; }
-  const available = filterSubject(questions, subject).length;
+  const counts = !fromMistakes && catalog ? Object.fromEntries(Object.entries(catalog.subjects).map(([key, item]) => [key, item.count])) : null;
+  if (subject === null) subject = fromMistakes ? 'all' : SUBJECTS.find(item => counts?.[item.id] > 0)?.id || 'all';
+  const available = counts ? (subject === 'all' ? catalog.total : counts[subject]) : filterSubject(questions, subject).length;
   const actualCount = Math.min(count, available);
   app.innerHTML = `<div class="eyebrow">${fromMistakes ? 'Review & grow' : 'A little progress, every day'}</div>
     <h1>${fromMistakes ? '重温错题，<br>巩固理解。' : '专注练习，<br>从容备考。'}</h1>
@@ -51,7 +57,8 @@ function home() {
     <section class="card accuracy-summary" id="cumulative-summary" aria-label="累计统计">${cumulativeSummary()}</section>
     <section class="card setup">
       <label class="label" for="subject">选择科目</label>
-      <select id="subject">${subjectOptions(subject, questions)}</select>
+      <select id="subject">${subjectOptions(subject, questions, counts)}</select>
+      ${!fromMistakes ? '<p class="note">按科目练习准备更快；混合练习首次需准备全部科目。</p>' : ''}
       <div class="label spaced" id="count-label">这次想做多少题？</div>
       <div class="counts" role="group" aria-labelledby="count-label">${[5, 10, 15, 20].map(number => `
         <button class="count ${number === count ? 'active' : ''}" data-count="${number}" aria-pressed="${number === count}">${number} 题</button>`).join('')}</div>
@@ -65,6 +72,7 @@ function home() {
         : '记录本次练习的用时，没有时间限制。'}</p>
       ${available && available < count ? `<p class="notice">当前有 ${available} 道题，本次将练习全部 ${available} 题。</p>` : ''}
       <button class="primary" id="start" ${!available ? 'disabled' : ''}>开始${fromMistakes ? '错题' : ''}练习　→</button>
+      <p class="notice error" id="bank-status" role="alert" hidden></p>
       <p class="note">${available ? `随机抽题 · 当前科目共 ${available} 道题` : fromMistakes ? '当前科目暂无错题，完成练习后会自动收录。' : '当前科目暂无题目。'}</p>
     </section>
     <p class="foot">八科分开练习：民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法、侵权法。<br>错题在本机自动保存；登录云同步后可跨设备查看。清理浏览器前请确认同步完成。</p>`;
@@ -76,10 +84,40 @@ function home() {
   document.getElementById('start').addEventListener('click', start);
 }
 
-function start() {
+async function start() {
+  const token = ++startToken;
+  const selectedSubject = subject;
+  const button = document.getElementById('start');
+  preparing = true; button.disabled = true; button.textContent = '正在准备本次题目…';
   let questions;
-  try { questions = shuffle(availableQuestions()).slice(0, count); }
-  catch { home(); return; }
+  try {
+    if (!fromMistakes) {
+      const downloaded = await loadBank(selectedSubject);
+      if (token !== startToken) return;
+      for (const question of downloaded) knownQuestions.set(question.id, question);
+      bank = [...knownQuestions.values()];
+      mistakeStore.refreshQuestions(bank).catch(() => {});
+    } else {
+      await mistakeStore.ready;
+      const old = availableQuestions().filter(question => !question.source);
+      if (old.length) {
+        for (const key of new Set(old.map(question => question.subject))) {
+          for (const question of await loadBank(key)) knownQuestions.set(question.id, question);
+        }
+        await mistakeStore.refreshQuestions([...knownQuestions.values()]);
+      }
+    }
+    if (token !== startToken) return;
+    questions = shuffle(availableQuestions()).slice(0, count);
+  } catch (error) {
+    if (token === startToken) {
+      const status = document.getElementById('bank-status');
+      status.hidden = false; status.innerHTML = `${esc(error.message || '本次题目未能准备完成，请重试。')}<br>${backupLink}`;
+      button.disabled = false; button.textContent = '重试准备题目'; preparing = false;
+    }
+    return;
+  }
+  preparing = false;
   if (!questions.length) { home(); return; }
   clearInterval(ticker);
   session = {
@@ -228,22 +266,25 @@ window.addEventListener('beforeunload', event => {
   if (session && !session.submitted) { event.preventDefault(); event.returnValue = ''; }
 });
 
-window.addEventListener('mbe:cloud-synced', () => { if (!bank.length) return; if (!session) home(); else updateCumulative(); });
-window.addEventListener('mbe:local-refreshed', () => { if (!bank.length) return; if (!session) home(); else updateCumulative(); });
+function dataChanged() { if (session || preparing) updateCumulative(); else if (catalog || fromMistakes && storeReady) home(); }
+window.addEventListener('mbe:cloud-synced', dataChanged);
+window.addEventListener('mbe:local-refreshed', dataChanged);
+mistakeStore.ready.then(() => { storeReady = true; updateCumulative(); });
 async function loadPracticeBank() {
   if (bankLoading) return;
   bankLoading = true;
-  app.innerHTML = '<p class="sub" role="status">正在载入题库…网络较慢时会自动重试，请稍候。</p>';
+  app.innerHTML = `<p class="sub" role="status">正在读取科目清单…</p><p class="note">长时间无法打开？${backupLink}</p>`;
   try {
-    const questions = await loadBank();
-    await mistakeStore.ready;
-    try { await mistakeStore.refreshQuestions(questions); } catch { /* Practice remains available if local storage cannot be updated. */ }
-    bank = questions;
+    if (fromMistakes) await mistakeStore.ready;
+    else catalog = await loadCatalog({ refresh: true });
     home();
   } catch (error) {
-    app.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '题库载入失败，请检查网络后重试。')}</p><button class="primary" id="retry-bank">重新载入题库</button>`;
+    app.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '科目清单暂时无法载入，请重试。')}</p><button class="primary" id="retry-bank">重新载入科目清单</button><p>${backupLink}</p>`;
     document.getElementById('retry-bank').addEventListener('click', loadPracticeBank);
   } finally { bankLoading = false; }
 }
-window.addEventListener('online', () => { if (!bank.length) loadPracticeBank(); });
+window.addEventListener('online', () => {
+  if (!catalog && !fromMistakes) loadPracticeBank();
+  else if (!session && !preparing && document.getElementById('bank-status')?.hidden === false) start();
+});
 loadPracticeBank();

@@ -18,9 +18,9 @@ export const filterSubject = (questions, subject) => subject === 'all'
 export const answerLetter = answer => Number.isInteger(answer) && answer >= 0 && answer < 4
   ? 'ABCD'[answer] : null;
 
-export function subjectOptions(selected, questions) {
+export function subjectOptions(selected, questions, counts = null) {
   return [{ id: 'all', label: '全部科目' }, ...SUBJECTS].map(subject => {
-    const available = filterSubject(questions, subject.id).length;
+    const available = counts ? (subject.id === 'all' ? Object.values(counts).reduce((sum, count) => sum + count, 0) : counts[subject.id] ?? 0) : filterSubject(questions, subject.id).length;
     return `<option value="${subject.id}" ${subject.id === selected ? 'selected' : ''}>${esc(subject.label)}（${available} 题）</option>`;
   }).join('');
 }
@@ -58,47 +58,12 @@ export class QuizTimer {
   stop() { if (this.stoppedAt === null) this.stoppedAt = this.now(); }
 }
 
-async function bankResource(path, json, cache) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt) await new Promise(resolve => setTimeout(resolve, attempt * 400));
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
-    try {
-      const response = await fetch(path, { signal: controller.signal, cache: attempt ? 'reload' : cache });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      // The body can fail after headers arrive on an unstable mobile connection.
-      return await (json ? response.json() : response.text());
-    } catch (error) {
-      if (attempt === 2) throw new Error('题库文件未能下载完成，请检查网络后点击重试。', { cause: error });
-    } finally { clearTimeout(timeout); }
-  }
+export async function loadCatalog(options) {
+  return (await import('./bank-loader.js?v=7')).loadCatalog(options);
 }
 
-export async function loadBank() {
-  for (let refresh = 0; refresh < 2; refresh++) {
-    const cache = refresh ? 'reload' : 'default';
-    const resources = await Promise.allSettled([
-      bankResource('questions.txt?v=3', false, cache), bankResource('question-metadata.json?v=3', true, cache),
-    ]);
-    const failure = resources.find(result => result.status === 'rejected');
-    if (failure) throw failure.reason;
-    const [source, metadata] = resources.map(result => result.value);
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
-    const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-    if (hash !== metadata.bankSha256) {
-      if (!refresh) continue;
-      throw new Error('题库与科目数据版本不一致，请稍后重试。');
-    }
-    if (typeof DecompressionStream !== 'function') throw new Error('浏览器暂不支持题库解压，请更新系统或使用新版浏览器。');
-    let questions;
-    try {
-      const bytes = Uint8Array.from(atob(source), character => character.charCodeAt(0));
-      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      questions = JSON.parse(await new Response(stream).text());
-    } catch (error) { throw new Error('题库解析未完成，请点击重试。', { cause: error }); }
-    if (!Array.isArray(questions) || !Array.isArray(metadata.questions) || questions.length !== metadata.questions.length) throw new Error('科目数据不完整。');
-    return questions.map((question, index) => ({ ...question, ...metadata.questions[index] }));
-  }
+export async function loadBank(subject = 'all') {
+  return (await import('./bank-loader.js?v=7')).loadBank(subject);
 }
 
 function sourcePages(question, kind) {
@@ -112,7 +77,7 @@ function sourcePages(question, kind) {
 function originalPages(question, kind) {
   const label = kind === 'question' ? '题目' : '解析';
   return `<div class="source-pages">${sourcePages(question, kind).map(page => `<figure class="pdf-source-page" data-pdf-path="${esc(question.source.pdfPath)}" data-pdf-page="${page}">
-    <figcaption><span>${label} · PDF 第 ${page} 页</span><a class="text-link" href="${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">打开原始 PDF ↗</a></figcaption>
+    <figcaption><span>${label} · PDF 第 ${page} 页</span><a class="text-link" href="${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">打开原始 PDF ↗</a><a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">备用 PDF ↗</a></figcaption>
     <div class="pdf-page-surface" aria-label="${label}原文 PDF 第 ${page} 页">
       <p class="pdf-page-status" role="status">浏览到这里时载入原文页面…</p>
     </div>

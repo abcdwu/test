@@ -37,11 +37,13 @@ class BrowserMistakeStore {
 
   async initialize() {
     this.db = await new Promise((resolve, reject) => {
+      let blocked = false;
       const request = indexedDB.open('mbe-mistakes', 2);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains('state')) request.result.createObjectStore('state');
       };
-      request.onsuccess = () => resolve(request.result);
+      request.onblocked = () => { blocked = true; reject(new Error('请关闭本站其他旧标签页后刷新，以继续读取错题本。')); };
+      request.onsuccess = () => { if (blocked) request.result.close(); else resolve(request.result); };
       request.onerror = () => reject(request.error);
     });
     this.db.onversionchange = () => this.db.close();

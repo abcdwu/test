@@ -7,7 +7,7 @@ primary_region = "nrt"
 [env]
   PORT = "8080"
   DATABASE_PATH = "/data/mistakes.sqlite"
-  ALLOWED_ORIGINS = "https://test.chaoxu.me,https://abcdwu.github.io"
+  ALLOWED_ORIGINS = "https://test.chaoxu.me,https://abcdwu.github.io,https://abcdwu-mbe-mistakes.fly.dev"
 
 [[mounts]]
   source = "mistake_data"

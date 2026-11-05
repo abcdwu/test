@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - server/**
+      - bank/**
+      - bank-loader.js
+      - fly.toml
       - progress.js
       - mistake-store.js
       - Dockerfile
