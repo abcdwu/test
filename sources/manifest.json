@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "documents": [
+    {
+      "id": "criminal-law",
+      "subject": "criminal-law",
+      "originalFilename": "FILE_7646.pdf",
+      "path": "sources/criminal-law.pdf",
+      "sha256": "c5666d1ca9f8f5bbeb591e0e15e07cd76238c05af9e7bd168ef6605d9b720620",
+      "pages": 474,
+      "completeQuestions": 163,
+      "overlaps": []
+    },
+    {
+      "id": "real-property",
+      "subject": "real-property",
+      "originalFilename": "2025MBE-QBank-Real-Property.pdf-2025MBE-QBank-Torts.pdf-2025MBE-QBank-Evidence.pdf",
+      "path": "sources/real-property.pdf",
+      "sha256": "12756205002f2ecb639a15969c75f139940cb4076c413b29de8f2982f9dbeab8",
+      "pages": 721,
+      "completeQuestions": 248,
+      "overlaps": []
+    },
+    {
+      "id": "contracts",
+      "subject": "contracts",
+      "originalFilename": "FILE_5153.pdf",
+      "path": "sources/contracts.pdf",
+      "sha256": "1728a5f47e441e5f26e1402f5c7af0a00aa23aaee47d731272f0dab7ba1479fd",
+      "pages": 807,
+      "completeQuestions": 273,
+      "overlaps": []
+    },
+    {
+      "id": "torts",
+      "subject": "torts",
+      "originalFilename": "FILE_4759.pdf",
+      "path": "sources/torts.pdf",
+      "sha256": "25ee44fa82a8eddd58d628b4d366985e911a0351e72704a56ce9bf3cd04e528c",
+      "pages": 689,
+      "completeQuestions": 229,
+      "overlaps": []
+    },
+    {
+      "id": "civil-procedure",
+      "subject": "civil-procedure",
+      "originalFilename": "2025MBE-QBank-Civil-Procedure.pdf-2025MBE-QBank-Consititution-Law.pdf-2025MBE-QBank-Contracts.pdf-2025MBE-QBank-Criminal-Law.pdf-2025MBE-QBank-Criminal-Procedure.pdf",
+      "path": "sources/civil-procedure.pdf",
+      "sha256": "6eb9fe66d81e539f623f92b149ba8b670abc3b9f95cfbce9e15f2c51c60e0a68",
+      "pages": 899,
+      "completeQuestions": 297,
+      "overlaps": []
+    },
+    {
+      "id": "criminal-procedure",
+      "subject": "criminal-procedure",
+      "originalFilename": "FILE_9736.pdf",
+      "path": "sources/criminal-procedure.pdf",
+      "sha256": "fc934838155cab71dac4beb431a8d9644877ed9258c2dd27d2d461d9ba9012b7",
+      "pages": 255,
+      "completeQuestions": 85,
+      "overlaps": []
+    },
+    {
+      "id": "evidence",
+      "subject": "evidence",
+      "originalFilename": "FILE_4471.pdf",
+      "path": "sources/evidence.pdf",
+      "sha256": "a11f3cd4d413bf4aaab5578c1805f954c24c6ac76e7c7c930e8e942288fa18ec",
+      "pages": 785,
+      "completeQuestions": 265,
+      "overlaps": [
+        {
+          "page": 785,
+          "kind": "duplicate-question-fragment",
+          "document": "real-property",
+          "questionNumber": 1
+        }
+      ]
+    },
+    {
+      "id": "constitutional-law",
+      "subject": "constitutional-law",
+      "originalFilename": "FILE_7641.pdf",
+      "path": "sources/constitutional-law.pdf",
+      "sha256": "351fadc9bec00d10684709431aeee2d23b167e8a1304f4155205fc084861d448",
+      "pages": 727,
+      "completeQuestions": 243,
+      "overlaps": []
+    }
+  ]
+}

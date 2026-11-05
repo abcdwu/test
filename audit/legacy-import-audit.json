@@ -1,0 +1,2564 @@
+{
+  "auditDate": "2026-11-05",
+  "examReady": false,
+  "reason": "Original PDFs are unavailable here. Completeness and source correspondence are not certified.",
+  "bankSha256": "7c793238ca9388a5035bef5fafb4b1e98bca180375f23a469c18dd132d8eba23",
+  "metadataHashMatches": true,
+  "importedQuestions": 1635,
+  "importedSubjectCounts": {
+    "civil-procedure": 282,
+    "constitutional-law": 239,
+    "contracts": 268,
+    "criminal-law": 157,
+    "criminal-procedure": 77,
+    "evidence": 265,
+    "real-property": 248,
+    "torts": 99
+  },
+  "originalQuestionCounts": null,
+  "structuralErrors": [],
+  "exactDuplicateStemNumbers": [],
+  "wrongChoiceReferenceMismatches": [],
+  "referenceCheckLimitation": "Checks an inference used by the legacy importer; it is not an independent answer key or legal-content review.",
+  "questionsWithPageNumbers": 173,
+  "standalonePageNumberOccurrences": 223,
+  "confirmedExtractionIssues": [
+    {
+      "importedNumber": 606,
+      "id": "mbe-3d3492e1dc520a6c0594c39b",
+      "subject": "criminal-procedure",
+      "standalonePageNumbers": [],
+      "textExtractionDefects": [
+        "FifthAmendmentprivilegeagainstself-incrimination"
+      ]
+    },
+    {
+      "importedNumber": 808,
+      "id": "mbe-42cbcbbfcc1f3b1b3b423650",
+      "subject": "contracts",
+      "standalonePageNumbers": [],
+      "textExtractionDefects": [
+        "cannotbe cured"
+      ]
+    },
+    {
+      "importedNumber": 953,
+      "id": "mbe-1b561bc5932e2b0b07859554",
+      "subject": "torts",
+      "standalonePageNumbers": [],
+      "textExtractionDefects": [
+        "Contributory neligence",
+        "Traditionalcontributorynegligence",
+        "Purecomparativenegligencejurisdiction"
+      ]
+    },
+    {
+      "importedNumber": 1149,
+      "id": "mbe-c116e868b4ca4f13234d7730",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "2"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1150,
+      "id": "mbe-209a26ef05fe4245e1f95a88",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "5"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1151,
+      "id": "mbe-ef188be061060432d2ea6c1d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 5,
+          "text": "8"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1152,
+      "id": "mbe-7e3058a56bbbed6e2ffc8bf0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "14"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1153,
+      "id": "mbe-52946f2f34ebe057400a0c40",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "17"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1155,
+      "id": "mbe-667940ea2451187dac4e243e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "21"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "23"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1156,
+      "id": "mbe-a25e57cec2638b1a326615bd",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "26"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1157,
+      "id": "mbe-dfcfbd7cb3d24dda9f996d70",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "29"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1158,
+      "id": "mbe-932865b2b4d026425123fb2f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "32"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1159,
+      "id": "mbe-f3c745e4f8f55c03248a9ecc",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "35"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1161,
+      "id": "mbe-9db8a7680aa51b037011ef30",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "39"
+        },
+        {
+          "field": "explanation",
+          "line": 19,
+          "text": "41"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1162,
+      "id": "mbe-da02d3a2aecdf9d13781185f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "44"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1163,
+      "id": "mbe-dbddffaea79877f9131ae152",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "46"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "48"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1164,
+      "id": "mbe-d141d75c2783e6ab7a118da4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "51"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1165,
+      "id": "mbe-c61a54d147d17db7aa16d7e0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "53"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "55"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1166,
+      "id": "mbe-d5bc4a214c65aeb28d2b8ce2",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "58"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1167,
+      "id": "mbe-fc1a98b65a9ea97c97880b81",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "61"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1168,
+      "id": "mbe-59592e69439e245319b05b74",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 5,
+          "text": "64"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1170,
+      "id": "mbe-14bd850cd1685ece6c6b86cf",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "70"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1171,
+      "id": "mbe-f3615e9809c297c71602eaa5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "73"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1172,
+      "id": "mbe-c0c71a37c374935fce2487b4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 5,
+          "text": "76"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1175,
+      "id": "mbe-f6f1507db0eea13ccc5e3471",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "83"
+        },
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "85"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1176,
+      "id": "mbe-75e533de499a79c1d19b385a",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "88"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1177,
+      "id": "mbe-f895b79a335ebb479acc21a4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "91"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1179,
+      "id": "mbe-885bd4fbf4bbee5112ecfc10",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "95"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "97"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1182,
+      "id": "mbe-131ab12d84e95f703d08b2d0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "104"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1183,
+      "id": "mbe-18a2ce1b4167e69e81336e6f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "107"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "109"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1185,
+      "id": "mbe-d616e9170f28c73b26226393",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "113"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1186,
+      "id": "mbe-0c83f6e763a78007bea70d6f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "116"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "118"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1188,
+      "id": "mbe-bbb711183c8953032ad72e41",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "122"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1189,
+      "id": "mbe-d4f1809c3d82410ac81b59f4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "125"
+        },
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "127"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1190,
+      "id": "mbe-3e4d1ce0e19136aad4292c5e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "130"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1192,
+      "id": "mbe-a88de78137ff5440a2afd7cb",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "136"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1193,
+      "id": "mbe-669eb3f3d3cc490da1467202",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "139"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1194,
+      "id": "mbe-622abdb0925c6ce96751ae51",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "142"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1195,
+      "id": "mbe-151fc93dc8d279dd3c3b7300",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "148"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1197,
+      "id": "mbe-475688276dede58d37a4ecfc",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "152"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1199,
+      "id": "mbe-38813b00c18ebb4e3a6db7a4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "157"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "159"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1201,
+      "id": "mbe-247aaa56aa08fdab1c04f2df",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "165"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1202,
+      "id": "mbe-77f27dcdec141b7eedd1d45a",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "168"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1204,
+      "id": "mbe-100db382ceb098906267114d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "172"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "174"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1207,
+      "id": "mbe-8130d933fdc8f03949048a31",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "181"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "183"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1209,
+      "id": "mbe-b47249750127029717c23155",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "187"
+        },
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "189"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1210,
+      "id": "mbe-a5322320a3d87c78fe782d56",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "192"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1212,
+      "id": "mbe-61eff5c7d4e20d1a9a8a73a2",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "196"
+        },
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "198"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1213,
+      "id": "mbe-42fade3ba85d449540cdb517",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "201"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1214,
+      "id": "mbe-fc8e1a3a04fd41033e97c1dd",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "204"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1216,
+      "id": "mbe-b8004e5eaeb77414668fbc16",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "208"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "210"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1218,
+      "id": "mbe-2317fa2c232e57689cc2aa3e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "214"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1219,
+      "id": "mbe-4f684904604932e7cceb0f44",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "217"
+        },
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "219"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1220,
+      "id": "mbe-efd495f3c6401ed3bd5bc6c5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "222"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1221,
+      "id": "mbe-d6062c804bdefde89b33ae72",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "225"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1223,
+      "id": "mbe-bdb6aa6cd07ed6bc72c259f6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "229"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1224,
+      "id": "mbe-b598c41c7c98c21aeaa99e11",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "232"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1225,
+      "id": "mbe-0d2145c8e9c3db469ca5b585",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "235"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1226,
+      "id": "mbe-4cb5ce51a18fd9c84e4dd52f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "238"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "240"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1228,
+      "id": "mbe-357b89d9c801ab800486f9f6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "246"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1230,
+      "id": "mbe-1d436e5fa49be89b7bd81cf0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "250"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "252"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1232,
+      "id": "mbe-5213bb58440419d8f24bc1b0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "256"
+        },
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "258"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1233,
+      "id": "mbe-e6f5408a61bc5fed070d06d8",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "261"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1234,
+      "id": "mbe-1489f43a5e025d0be7db0151",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "264"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1236,
+      "id": "mbe-0e6481e9d3a387f0eb54fea3",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "268"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "270"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1238,
+      "id": "mbe-6d8be0e35bcf7272a0d1a806",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "274"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1239,
+      "id": "mbe-1da7deb8c560bb38a12e6cbd",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "277"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1240,
+      "id": "mbe-cf44ad2a0fe074d4b863ee5e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "280"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "282"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1242,
+      "id": "mbe-f2b0012e79728af40f9309b8",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 19,
+          "text": "288"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1243,
+      "id": "mbe-46cb0ded9b655a62fbe3ddad",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "291"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1245,
+      "id": "mbe-7fd773de1bc2765cedd7c29e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "297"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1246,
+      "id": "mbe-6230c4f18a508ff3ac81fbe9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "300"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1247,
+      "id": "mbe-1382b4d14dc4dc13d95ef3ae",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "303"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1248,
+      "id": "mbe-563c7d285a27ec1c5b7d9d1c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "306"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1250,
+      "id": "mbe-1162678b9ea1adb20cc1916e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "310"
+        },
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "312"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1251,
+      "id": "mbe-fe8ff294a8018a46c58cd5a5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "315"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1252,
+      "id": "mbe-5f99b8cef1689f5373563345",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "318"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1254,
+      "id": "mbe-d7340e3a251b28555be82acf",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "322"
+        },
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "324"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1256,
+      "id": "mbe-e77629f8f09fbf0345388fd5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "328"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1257,
+      "id": "mbe-521c3dcba2a5a2a338289e2d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "331"
+        },
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "333"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1258,
+      "id": "mbe-c188e77c1a12948c23c69fc0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "336"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1259,
+      "id": "mbe-af3248dd40a2444ba443f492",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "339"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1260,
+      "id": "mbe-61b80383830838a79d504453",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "342"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1261,
+      "id": "mbe-69accb04f8dda12e6670b4d5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "345"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1263,
+      "id": "mbe-66b7bd18f5c8daf43d02d601",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "349"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1264,
+      "id": "mbe-1813a1f5a94697fbe8f9e24c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "352"
+        },
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "354"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1265,
+      "id": "mbe-8848f5d6e7571e60c4cbc651",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "357"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1266,
+      "id": "mbe-71cf846d058e20b5b16d14b2",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "360"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1268,
+      "id": "mbe-2e24219c74845e29c762689b",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "364"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "366"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1269,
+      "id": "mbe-d627c6c4ffb8de43e1df5330",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "369"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1270,
+      "id": "mbe-9433d82cad74c420274b1bd6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "372"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1272,
+      "id": "mbe-2a44e23565c125d54f8c00b9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "376"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1273,
+      "id": "mbe-b75a207a7a3c5121a32586b9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "379"
+        },
+        {
+          "field": "explanation",
+          "line": 5,
+          "text": "381"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1275,
+      "id": "mbe-010cdf0e45ff089ce04f63c6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "385"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1276,
+      "id": "mbe-7f35f61048c509952d173f7f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "388"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "390"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1278,
+      "id": "mbe-7f483baba4a4c55603b35565",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "394"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "396"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1279,
+      "id": "mbe-0acb33a242ca6ed202e77ccb",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "399"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1280,
+      "id": "mbe-a5c073030dfcdebd1cc90b06",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "402"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1282,
+      "id": "mbe-229770305f847ef7102009c1",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "406"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1283,
+      "id": "mbe-1c08232318004ef51d2b0133",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "409"
+        },
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "411"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1285,
+      "id": "mbe-3fd8a51f6bee69fc26bfdfa9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "416"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1287,
+      "id": "mbe-5009b1c453756413cf9657ad",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "420"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1288,
+      "id": "mbe-4cbe1af0e9aeb01855670b1f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "423"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "425"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1290,
+      "id": "mbe-26782e158ab90b5c33dd259d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "429"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1291,
+      "id": "mbe-4a489a97b8179380fee66173",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "432"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1292,
+      "id": "mbe-5019213a6771e5d2b3e7a55a",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "435"
+        },
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "437"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1293,
+      "id": "mbe-ae816e2c395e7a13269181e6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "440"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1295,
+      "id": "mbe-fec9a5a2545da79b583b40c9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "444"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "446"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1296,
+      "id": "mbe-476ae016a9c4bd10453b32dc",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "449"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1297,
+      "id": "mbe-f2d3e34be98283ae1ab2567d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "452"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1298,
+      "id": "mbe-c7232f501c1634444d1e12bd",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "455"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1300,
+      "id": "mbe-a33bed16d93f0af26dda7456",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "459"
+        },
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "461"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1303,
+      "id": "mbe-33f0b82130498c9c8995db45",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "468"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1304,
+      "id": "mbe-ce02640f2f71ab863e63b321",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "471"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "473"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1305,
+      "id": "mbe-33796a915f23e0581a197560",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 19,
+          "text": "476"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1306,
+      "id": "mbe-7ff1704e8b2258fb1eae46e8",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "479"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1308,
+      "id": "mbe-4619f10995c8b2ab9750268d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "484"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1309,
+      "id": "mbe-64b2d8e9c65beedb230a7aaa",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "487"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1310,
+      "id": "mbe-212f232970dd67cf958b87fa",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "490"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1312,
+      "id": "mbe-181ce71942cb646587c5f820",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "494"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1314,
+      "id": "mbe-94974c7c825898e672d6fab9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "500"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1315,
+      "id": "mbe-fda215045bf1636ae85a5656",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "503"
+        },
+        {
+          "field": "explanation",
+          "line": 5,
+          "text": "505"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1317,
+      "id": "mbe-7c8a8c5f913df27ff1f1b48c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "509"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1318,
+      "id": "mbe-157a2e4318203c322e89c61b",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "512"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "514"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1320,
+      "id": "mbe-243e70fb18b95aba934c7806",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "521"
+        },
+        {
+          "field": "explanation",
+          "line": 15,
+          "text": "523"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1322,
+      "id": "mbe-52c8a3aee0789087a0c8f4c2",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "529"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1323,
+      "id": "mbe-552a61c303ded4e9d3dfe4d3",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "532"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1324,
+      "id": "mbe-a5aa90105eb042d0c8229ad4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "535"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1326,
+      "id": "mbe-ee4253b6a2729cc781b83a33",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "539"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1327,
+      "id": "mbe-5e2cf948a9e83ae40f4b69bc",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "542"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "544"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1328,
+      "id": "mbe-3f7337e90af267d40745f4b6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "547"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1329,
+      "id": "mbe-8b38c274ff0cfb558cd81c8d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "550"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1331,
+      "id": "mbe-fa713a5520f37a7384fc8ef9",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "554"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "556"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1332,
+      "id": "mbe-9e91a95ae4c3f68c22b6867c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "559"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1333,
+      "id": "mbe-4418582db982b8e6b281b081",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "562"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1334,
+      "id": "mbe-395eba88647e70683f521216",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "565"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1335,
+      "id": "mbe-f6877a7fcbd25137321ded3c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "568"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1336,
+      "id": "mbe-1e16e05514cc5896caab6c81",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "571"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1337,
+      "id": "mbe-788c1b13f833c29e345abe94",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 19,
+          "text": "574"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1339,
+      "id": "mbe-0e33ad3ce28cac5ae6e93999",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "578"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1340,
+      "id": "mbe-9fe0499f1c2d1aaf055a88c5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "581"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1341,
+      "id": "mbe-ab6b56fb4a7982cd6583d43e",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "584"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "586"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1342,
+      "id": "mbe-8ccfb6885c642b5b6965625b",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "589"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1344,
+      "id": "mbe-dcf56597a2c2b9551ebf00bb",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "593"
+        },
+        {
+          "field": "explanation",
+          "line": 3,
+          "text": "595"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1345,
+      "id": "mbe-e0800a583d3704c1ce00b566",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 11,
+          "text": "598"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1347,
+      "id": "mbe-a74ca2f9562d2ce92eabf7ce",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "602"
+        },
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "604"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1349,
+      "id": "mbe-f0a7322df9ad3ba6392334ee",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "608"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1350,
+      "id": "mbe-1a3d3b9fa8f4e01f4c1f3928",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "611"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1351,
+      "id": "mbe-729a9114ad8c44d30df89467",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "614"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1352,
+      "id": "mbe-c707a7ae3d60e0351b0002b3",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "617"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "619"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1353,
+      "id": "mbe-2fe42889584ac8b79ae98fa4",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "622"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1355,
+      "id": "mbe-a3c5cb553ba8d464c27121a6",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "626"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1356,
+      "id": "mbe-8f6962acc675b55de14ffa32",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "629"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1357,
+      "id": "mbe-4e76760fdaa8761a5c254ef5",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "632"
+        },
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "634"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1360,
+      "id": "mbe-07438c719ee9a9032e1a8c31",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "644"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1361,
+      "id": "mbe-581464ccb5bea6641235a79f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "647"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1362,
+      "id": "mbe-db11352bb575fe213748faa1",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "650"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1363,
+      "id": "mbe-47eefa89a228eaa7a6e0918d",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "653"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "655"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1364,
+      "id": "mbe-32a294e00e4b3001d4b1bffb",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "658"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1365,
+      "id": "mbe-c64dd7cdd6e522575825b82f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 17,
+          "text": "661"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1367,
+      "id": "mbe-65d5c5ba9c23c62257e7eccf",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "665"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1368,
+      "id": "mbe-4f43ee7b09691d27400bed7f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "668"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1369,
+      "id": "mbe-203341252c86ad87127c10ef",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "671"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "673"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1370,
+      "id": "mbe-973302e1c37deff87e850f3f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "676"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1372,
+      "id": "mbe-efefb228325ec3f33ddefdb3",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "680"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1373,
+      "id": "mbe-759a9f43b913459ffafa2cac",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "685"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1375,
+      "id": "mbe-8b0a5b1481e836eee1cda14f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "689"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1376,
+      "id": "mbe-a85835f6cbce08dd83161249",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "692"
+        },
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "694"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1377,
+      "id": "mbe-615ca1fb007b6d41356d283f",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "697"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1378,
+      "id": "mbe-034219f2021ae9c976310352",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "700"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1380,
+      "id": "mbe-12c8720ecce6bae881ef8850",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "704"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1381,
+      "id": "mbe-b899f44bdb446de8ea8f0848",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "707"
+        },
+        {
+          "field": "explanation",
+          "line": 9,
+          "text": "709"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1383,
+      "id": "mbe-aadf6f81d49890a5c488d5ef",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "714"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1385,
+      "id": "mbe-10b2278a58ea349d0cf9992c",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "stem",
+          "line": 1,
+          "text": "718"
+        },
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "720"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1386,
+      "id": "mbe-230db0e19c1058bb2bc99fc0",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 7,
+          "text": "723"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1387,
+      "id": "mbe-100a6612bad6ab14ead4b8bd",
+      "subject": "constitutional-law",
+      "standalonePageNumbers": [
+        {
+          "field": "explanation",
+          "line": 13,
+          "text": "726"
+        }
+      ],
+      "textExtractionDefects": []
+    },
+    {
+      "importedNumber": 1479,
+      "id": "mbe-06c3e5818920d52cabac2c81",
+      "subject": "real-property",
+      "standalonePageNumbers": [],
+      "textExtractionDefects": [
+        "interest andthe principal"
+      ]
+    }
+  ]
+}

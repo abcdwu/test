@@ -60,7 +60,7 @@ export class QuizTimer {
 
 export async function loadBank() {
   const [sourceResponse, metadataResponse] = await Promise.all([
-    fetch('questions.txt'), fetch('question-metadata.json?v=2'),
+    fetch('questions.txt?v=3'), fetch('question-metadata.json?v=3'),
   ]);
   if (!sourceResponse.ok || !metadataResponse.ok) throw new Error('题库载入失败，请刷新页面重试。');
   const [source, metadata] = await Promise.all([sourceResponse.text(), metadataResponse.json()]);
@@ -74,6 +74,33 @@ export async function loadBank() {
   return questions.map((question, index) => ({ ...question, ...metadata.questions[index] }));
 }
 
+function sourcePages(question, kind) {
+  const source = question.source;
+  if (!source || !/^sources\/[a-z0-9-]+\.pdf$/.test(source.pdfPath)) return [];
+  const pages = source[kind === 'question' ? 'questionPages' : 'explanationPages'];
+  if (!Array.isArray(pages) || !pages.length || pages.some(page => !Number.isInteger(page) || page < 1)) return [];
+  return [...new Set(pages)];
+}
+
+function originalPages(question, kind) {
+  const label = kind === 'question' ? '题目' : '解析';
+  return `<div class="source-pages">${sourcePages(question, kind).map(page => `<figure class="pdf-source-page" data-pdf-path="${esc(question.source.pdfPath)}" data-pdf-page="${page}">
+    <figcaption><span>${label} · PDF 第 ${page} 页</span><a class="text-link" href="${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">打开原始 PDF ↗</a></figcaption>
+    <div class="pdf-page-surface" aria-label="${label}原文 PDF 第 ${page} 页">
+      <p class="pdf-page-status" role="status">浏览到这里时载入原文页面…</p>
+    </div>
+  </figure>`).join('')}</div>`;
+}
+
+// This helper deliberately reads questionPages only: quiz markup must not include answer pages.
+export function questionSource(question) {
+  const pages = sourcePages(question, 'question');
+  if (!pages.length) return '';
+  const number = Number.isInteger(question.source.questionNumber) ? `原题第 ${question.source.questionNumber} 题 · ` : '';
+  return `<div class="question-source"><p class="source-reference">${number}题目 PDF 第 ${pages.join('、')} 页</p>
+    <details class="source-question"><summary>查看题目原始页面</summary>${originalPages(question, 'question')}</details></div>`;
+}
+
 export function reviewQuestion(question, selected) {
   return `<p class="question">${esc(question.stem)}</p>
     <div class="result-options">${question.choices.map((choice, index) => {
@@ -82,5 +109,15 @@ export function reviewQuestion(question, selected) {
         ${letter}. ${esc(choice)} ${letter === question.answer ? ' ✓ 正确答案' : selected === letter ? ' ✕ 你的答案' : ''}
       </div>`;
     }).join('')}</div>
-    <div class="explain"><strong>原文解析</strong>\n\n${esc(question.explanation)}</div>`;
+    ${questionSource(question)}
+    ${sourcePages(question, 'explanation').length
+      ? `<div class="explain source-explanation"><strong>完整原文解析</strong>
+          <p class="source-note">以下保留原始 PDF 的全部解析页，包括图表。页码为 PDF 文件页码。</p>
+          ${originalPages(question, 'explanation')}
+          <details class="extracted-text"><summary>复制解析文字（辅助文本）</summary>
+            <p class="source-note">提取文字可能存在排版或识别误差，图表及准确内容请查看上方原始页面。</p>
+            <div class="extracted-content">${esc(question.explanation)}</div>
+          </details>
+        </div>`
+      : `<div class="explain"><strong>原文解析</strong>\n\n${esc(question.explanation)}</div>`}`;
 }

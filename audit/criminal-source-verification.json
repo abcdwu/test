@@ -1,0 +1,14 @@
+{
+  "checked": 248,
+  "stable_ids_checked": 234,
+  "source_counts": {
+    "criminal-law": 163,
+    "criminal-procedure": 85
+  },
+  "subject_counts": {
+    "criminal-law": 165,
+    "criminal-procedure": 83
+  },
+  "duplicate_source_keys": [],
+  "mismatches": []
+}

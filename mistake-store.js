@@ -1,4 +1,4 @@
-import { answerLetter, SUBJECTS } from './common.js';
+import { answerLetter, SUBJECTS } from './common.js?v=3';
 
 export const STORAGE_KEY = 'mbe.mistakes.v1';
 export const BACKUP_FORMAT = 'mbe-mistakes';
@@ -46,6 +46,10 @@ export function mergeEntry(previous, incoming) {
   const latest = Date.parse(incoming.lastWrongAt) > Date.parse(previous.lastWrongAt) ? incoming : previous;
   return {
     ...latest, legacyCount, deviceCounts,
+    // A newer attempt from an older device must not discard restored source
+    // page references carried by the same question's current snapshot.
+    question: latest.question.source ? latest.question
+      : previous.question.source ? previous.question : incoming.question,
     wrongCount: legacyCount + Object.values(deviceCounts).reduce((sum, count) => sum + count, 0),
     firstWrongAt: Date.parse(incoming.firstWrongAt) < Date.parse(previous.firstWrongAt)
       ? incoming.firstWrongAt : previous.firstWrongAt,
@@ -106,6 +110,20 @@ export class MistakeStore {
     }
     this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: [...entries.values()] }));
     return { added: entries.size - before, total: entries.size };
+  }
+
+  refreshQuestions(questions) {
+    const current = new Map(questions.map(question => [question.id, question]));
+    const entries = this.read();
+    let updated = 0;
+    const refreshed = entries.map(entry => {
+      const question = current.get(entry.question.id);
+      if (!question || JSON.stringify(question) === JSON.stringify(entry.question)) return entry;
+      updated++;
+      return { ...entry, question };
+    });
+    if (updated) this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: refreshed }));
+    return updated;
   }
 
   record(questions, answers, now = new Date().toISOString()) {

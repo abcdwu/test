@@ -1,7 +1,8 @@
-import { SUBJECTS, esc, reviewQuestion, subjectLabel, subjectOptions } from './common.js';
-import { downloadBackup, STORAGE_KEY } from './mistake-store.js';
-import { mistakeStore } from './browser-store.js';
-import './cloud-sync.js';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=3';
+import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
+import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=3';
+import { mistakeStore } from './browser-store.js?v=3';
+import './cloud-sync.js?v=3';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');
@@ -9,6 +10,7 @@ let subject = SUBJECTS.some(item => item.id === requested) ? requested : 'all';
 let backupMessage = '', backupError = false;
 
 function render() {
+  unmountSourcePages(app);
   let entries;
   try { entries = mistakeStore.read(); }
   catch {
@@ -65,9 +67,13 @@ function render() {
     }
     render();
   });
+  mountSourcePages(app);
 }
 
 window.addEventListener('storage', event => { if (event.key === STORAGE_KEY || event.key === null) render(); });
 window.addEventListener('mbe:cloud-synced', render);
 window.addEventListener('mbe:local-refreshed', render);
-mistakeStore.ready.then(render);
+mistakeStore.ready.then(async () => {
+  try { await mistakeStore.refreshQuestions(await loadBank()); } catch { /* Keep existing snapshots available when the bank cannot be loaded. */ }
+  render();
+});

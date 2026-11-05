@@ -1,10 +1,11 @@
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, QuizTimer,
-  reviewQuestion, shuffle, subjectLabel, subjectOptions,
-} from './common.js';
-import { downloadBackup } from './mistake-store.js';
-import { mistakeStore } from './browser-store.js';
-import './cloud-sync.js';
+  questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
+} from './common.js?v=3';
+import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
+import { downloadBackup } from './mistake-store.js?v=3';
+import { mistakeStore } from './browser-store.js?v=3';
+import './cloud-sync.js?v=3';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -18,6 +19,7 @@ function availableQuestions() {
 }
 
 function home() {
+  unmountSourcePages(app);
   clearInterval(ticker);
   session = null;
   let questions = [], storageError = false;
@@ -89,6 +91,7 @@ function active() {
 }
 
 function render() {
+  unmountSourcePages(app);
   const { questions, answers, index, timer } = session;
   const question = questions[index];
   app.innerHTML = `<div class="meta quiz-meta">
@@ -105,11 +108,12 @@ function render() {
         <button class="option ${answers[index] === number ? 'selected' : ''}" data-choice="${number}" aria-pressed="${answers[index] === number}">
           <span class="letter">${'ABCD'[number]}</span><span>${esc(choice)}</span>
         </button>`).join('')}</div>
+      ${questionSource(question)}
     </section>
     <div class="nav">${index ? '<button class="secondary" id="previous">上一题</button>' : ''}
       ${index < questions.length - 1 ? '<button class="primary" id="next">下一题　→</button>' : '<button class="primary" id="submit">交卷并查看解析</button>'}
     </div>
-    <p class="note">已作答 ${answers.filter(answer => answer !== null).length} / ${questions.length} 题</p>`;
+    <p class="note" id="answered-count">已作答 ${answers.filter(answer => answer !== null).length} / ${questions.length} 题</p>`;
   document.getElementById('exit').addEventListener('click', () => {
     if (confirm('返回首页将结束本次练习，本次答案不会保存。确定吗？')) home();
     else updateClock();
@@ -117,7 +121,12 @@ function render() {
   app.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => {
     if (!active()) return;
     session.answers[session.index] = Number(button.dataset.choice);
-    render();
+    app.querySelectorAll('[data-choice]').forEach(option => {
+      const selected = Number(option.dataset.choice) === session.answers[session.index];
+      option.classList.toggle('selected', selected);
+      option.setAttribute('aria-pressed', String(selected));
+    });
+    document.getElementById('answered-count').textContent = `已作答 ${session.answers.filter(answer => answer !== null).length} / ${questions.length} 题`;
   }));
   for (const [id, direction] of [['previous', -1], ['next', 1]]) {
     document.getElementById(id)?.addEventListener('click', () => {
@@ -126,6 +135,7 @@ function render() {
     });
   }
   document.getElementById('submit')?.addEventListener('click', () => submitQuiz());
+  mountSourcePages(app);
 }
 
 async function submitQuiz(automatic = false) {
@@ -140,6 +150,7 @@ async function submitQuiz(automatic = false) {
   session.timer.stop();
   clearInterval(ticker);
   let saved;
+  unmountSourcePages(app);
   app.innerHTML = '<p class="sub" role="status">正在保存本次练习…</p>';
   try { saved = await mistakeStore.record(session.questions, session.answers); }
   catch { saved = null; }
@@ -147,6 +158,7 @@ async function submitQuiz(automatic = false) {
 }
 
 function results(automatic, saved) {
+  unmountSourcePages(app);
   const { questions, answers, timer } = session;
   const score = questions.filter((question, index) => answerLetter(answers[index]) === question.answer).length;
   const elapsed = automatic ? timer.limitMs : timer.elapsedMs;
@@ -188,6 +200,7 @@ function results(automatic, saved) {
     }]);
     downloadBackup(entries);
   });
+  mountSourcePages(app);
   window.scrollTo(0, 0);
 }
 
@@ -198,6 +211,11 @@ window.addEventListener('beforeunload', event => {
 
 window.addEventListener('mbe:cloud-synced', () => { if (!session) home(); });
 window.addEventListener('mbe:local-refreshed', () => { if (!session) home(); });
-loadBank().then(async questions => { await mistakeStore.ready; bank = questions; home(); }).catch(error => {
+loadBank().then(async questions => {
+  await mistakeStore.ready;
+  try { await mistakeStore.refreshQuestions(questions); } catch { /* Practice remains available if local storage cannot be updated. */ }
+  bank = questions;
+  home();
+}).catch(error => {
   app.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '题库载入失败，请刷新页面重试。')}</p>`;
 });

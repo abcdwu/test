@@ -1,0 +1,22 @@
+{
+  "auditDate": "2026-11-05",
+  "completeQuestions": 1803,
+  "sourcePages": 5357,
+  "sourceCoverageVerified": true,
+  "independentAnswerKeyAvailable": false,
+  "answerBasis": "Original explanations identify three distractors; citations are stored per question. This is source correspondence verification, not independent legal certification.",
+  "subjectCounts": {
+    "civil-procedure": 297,
+    "constitutional-law": 243,
+    "contracts": 273,
+    "criminal-law": 165,
+    "criminal-procedure": 83,
+    "evidence": 265,
+    "real-property": 248,
+    "torts": 229
+  },
+  "preservedLegacyIds": 1635,
+  "restoredQuestions": 168,
+  "originalFigurePages": 836,
+  "issues": []
+}

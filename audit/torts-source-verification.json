@@ -1,0 +1,275 @@
+{
+  "bankCount": 1803,
+  "tortsCount": 229,
+  "missingIdentities": [],
+  "extraIdentities": [],
+  "repeatedIdentities": {},
+  "issues": [
+    {
+      "question": 19,
+      "type": "explanation-pages",
+      "source": [
+        56
+      ],
+      "bank": [
+        56,
+        57
+      ]
+    },
+    {
+      "question": 22,
+      "type": "explanation-pages",
+      "source": [
+        65
+      ],
+      "bank": [
+        65,
+        66
+      ]
+    },
+    {
+      "question": 28,
+      "type": "explanation-pages",
+      "source": [
+        83
+      ],
+      "bank": [
+        83,
+        84
+      ]
+    },
+    {
+      "question": 34,
+      "type": "explanation-pages",
+      "source": [
+        101
+      ],
+      "bank": [
+        101,
+        102
+      ]
+    },
+    {
+      "question": 35,
+      "type": "explanation-pages",
+      "source": [
+        104,
+        105
+      ],
+      "bank": [
+        104,
+        105,
+        106
+      ]
+    },
+    {
+      "question": 38,
+      "type": "explanation-pages",
+      "source": [
+        114,
+        115
+      ],
+      "bank": [
+        114,
+        115,
+        116
+      ]
+    },
+    {
+      "question": 49,
+      "type": "explanation-pages",
+      "source": [
+        148,
+        149
+      ],
+      "bank": [
+        148,
+        149,
+        150
+      ]
+    },
+    {
+      "question": 60,
+      "type": "explanation-pages",
+      "source": [
+        182
+      ],
+      "bank": [
+        182,
+        183
+      ]
+    },
+    {
+      "question": 126,
+      "type": "explanation-pages",
+      "source": [
+        377
+      ],
+      "bank": [
+        377,
+        378
+      ]
+    },
+    {
+      "question": 163,
+      "type": "explanation-pages",
+      "source": [
+        488,
+        489
+      ],
+      "bank": [
+        488,
+        489,
+        490
+      ]
+    },
+    {
+      "question": 181,
+      "type": "explanation-pages",
+      "source": [
+        543
+      ],
+      "bank": [
+        543,
+        544
+      ]
+    },
+    {
+      "question": 193,
+      "type": "explanation-pages",
+      "source": [
+        579,
+        580
+      ],
+      "bank": [
+        579,
+        580,
+        581
+      ]
+    },
+    {
+      "question": 210,
+      "type": "explanation-pages",
+      "source": [
+        631
+      ],
+      "bank": [
+        631,
+        632
+      ]
+    }
+  ],
+  "contentMismatchCount": 0,
+  "pageRangeDifferenceClassification": "All 13 differences include only the known trailing truly empty page of the same source block; no missing explanation or diagram pages.",
+  "allExplanationImagePagesIncluded": true,
+  "visualCases": [
+    {
+      "sourceQuestion": 101,
+      "answer": "B",
+      "renderedStem": "While a businesswoman was leaving an elevator, it suddenly dropped several inches,\ncausing her to fall. An investigation of the accident revealed that the elevator dropped\nbecause it had been negligently maintained by an elevator company. The elevator company\nhad a contract with the owner of the building to inspect and maintain the elevator. The\nbusinesswoman's fall severely aggravated a preexisting physical disability.\nIf the businesswoman sues the elevator company for damages for her injuries, what should\nshe recover?",
+      "choices": [
+        "A\nDamages for the full amount of her disability, because a tortfeasor must take its victim as it finds her.",
+        "B\nDamages for the injury caused by the falling elevator, including the aggravation of her preexisting disability.",
+        "C\nNothing, if the accident would not have caused significant harm to an ordinarily prudent elevator passenger.",
+        "D\nNothing, if the elevator company could not reasonably have been expected to foresee the extent of the harm that the businesswoman suffered as a result of the accident."
+      ],
+      "questionPages": [
+        304
+      ],
+      "explanationPages": [
+        305,
+        306
+      ],
+      "correctChoiceVisible": "B. Damages for the injury caused by the falling elevator, including the aggravation of her preexisting disability. ✓ 正确答案",
+      "errors": []
+    },
+    {
+      "sourceQuestion": 145,
+      "answer": "A",
+      "renderedStem": "A seller sold his boat to a buyer. During negotiations, the buyer said that he planned to sail\nthe boat on the open seas. The seller told the buyer that the boat was seaworthy and had\nnever sustained any significant damage. In fact, the hull of the boat had been badly\ndamaged when the seller had run the boat aground. The seller had then done a cosmetic\nrepair to the hull rather than a structural repair.\nThe buyer relied on the seller's representations and paid a fair price for a boat in good\nrepair, only to discover after the sale was completed that the hull was in fact badly damaged\nand in a dangerous condition. The seller has refused to refund any of the buyer's money,\nand the buyer is contemplating suing the seller.\nUnder what theory would the buyer be most likely to recover?",
+      "choices": [
+        "A\nFraud.",
+        "B\nIntentional endangerment.",
+        "C\nNegligent misrepresentation.",
+        "D\nStrict products liability."
+      ],
+      "questionPages": [
+        433
+      ],
+      "explanationPages": [
+        434,
+        435
+      ],
+      "correctChoiceVisible": "A. Fraud. ✓ 正确答案",
+      "errors": []
+    },
+    {
+      "sourceQuestion": 163,
+      "answer": "A",
+      "renderedStem": "A real estate developer was trying to purchase land on which he intended to build a large\ncommercial development. An elderly widow had rejected all of the developer's offers to buy\nher ancestral home, where she had lived all her life and which was located in the middle of\nthe developer's planned development. Finally, the developer offered her $250,000. He told\nher that it was his last offer and that if she rejected it, state law authorized him to have her\nproperty condemned.\nThe widow then consulted her nephew, a law student, who researched the question and\nadvised her that the developer had no power of condemnation under state law. The widow\nhad been frightened by the developer's threat and was outraged when she learned that the\ndeveloper had lied to her.\nIf the widow asserts a claim based on misrepresentation against the developer, will she\nprevail?",
+      "choices": [
+        "A\nNo, because the widow suffered no pecuniary loss.",
+        "B\nNo, if the developer's offer of $250,000 equaled or exceeded the market value of the widow's property.",
+        "C\nYes, if the developer knew he had no legal power of condemnation.",
+        "D\nYes, if the developer tried to take unfair advantage of a gross difference between himself and the widow in commercial knowledge and experience."
+      ],
+      "questionPages": [
+        487
+      ],
+      "explanationPages": [
+        488,
+        489,
+        490
+      ],
+      "correctChoiceVisible": "A. No, because the widow suffered no pecuniary loss. ✓ 正确答案",
+      "errors": []
+    },
+    {
+      "sourceQuestion": 194,
+      "answer": "C",
+      "renderedStem": "A company manufactured metal stamping presses that were usually sold with an installed\nsafety device that made it impossible for a press to close on a worker's hands. The company\nstrongly recommended that its presses be purchased with the safety device installed, but\nwould sell a press without the safety device at a slightly reduced price.\nRejecting the company's advice, a worker's employer purchased a stamping press without\nthe safety device. The press closed on the worker's hand, crushing it.\nIf the worker were to sue the company, would the worker be likely to prevail?",
+      "choices": [
+        "A\nNo, because the company strongly recommended that the worker's employer purchase the press with the safety device.",
+        "B\nNo, because the failure of the worker's employer to purchase the press with a safety device was a superseding cause of the worker's injury.",
+        "C\nYes, because the company sold the press to the worker's employer without an installed safety device.",
+        "D\nYes, because the company's press was the cause in fact of the worker's injury."
+      ],
+      "questionPages": [
+        582
+      ],
+      "explanationPages": [
+        583,
+        584
+      ],
+      "correctChoiceVisible": "C. Yes, because the company sold the press to the worker's employer without an installed safety device. ✓ 正确答案",
+      "errors": []
+    },
+    {
+      "sourceQuestion": 229,
+      "answer": "C",
+      "renderedStem": "An amusement park purchased an oversized caricature mask from a manufacturer. One of\nthe amusement park's employees was wearing the mask when she was accidentally tripped\nby a customer. The employee fell, injuring her neck from the strain caused by the weight of\nthe mask. The employee filed a worker's compensation claim but only received limited\ncompensation that did not cover the full cost of treating her injury.\nThe employee brought a negligence suit against the manufacturer and has established that,\nin designing the mask, the manufacturer failed to include a safety harness that would\nprotect the wearer's neck from strain caused by a fall. In its defense, the manufacturer\nestablished that the mask's design complied with all government standards for flammability\nand composition, and that those standards did not require the masks to have safety\nharnesses.\nIs the employee likely to be awarded damages from the manufacturer?",
+      "choices": [
+        "A\nNo, because the employee's injury was caused by an intervening negligent act.",
+        "B\nNo, because the manufacturer's compliance with safety standards is conclusive evidence that it was not negligent.",
+        "C\nYes, because negligent intervening acts are generally regarded as foreseeable.",
+        "D\nYes, because the manufacturer was a commercial seller of the mask."
+      ],
+      "questionPages": [
+        687
+      ],
+      "explanationPages": [
+        688,
+        689
+      ],
+      "correctChoiceVisible": "C. Yes, because negligent intervening acts are generally regarded as foreseeable. ✓ 正确答案",
+      "errors": []
+    }
+  ],
+  "visualFindings": [
+    "Question text and all four choices match the corresponding original pages in all 5 restored cases: 101,145,163,194,229.",
+    "Correct answers shown and graded in the UI are B,A,A,C,C respectively; all match independent source inventory.",
+    "All source question previews and complete explanation page canvases loaded successfully in all 5 cases with no browser errors.",
+    "Source #163 explanation image-only page 489 and source #229 image-only page 689 were visually compared to native PDF renders; diagrams and labels are complete.",
+    "Readability issue: preserved PDF single-line breaks combine with white-space:pre-wrap to create short fragments and isolated words in question display. Parent notified; content remains complete."
+  ]
+}

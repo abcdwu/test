@@ -16,21 +16,20 @@ function memoryStorage() {
   return { getItem: key => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value) };
 }
 
-test('all 1,635 questions have distinct stable IDs and one of eight subjects', () => {
-  assert.equal(bank.length, 1635);
+test('all source questions have distinct stable IDs and one of eight subjects', () => {
+  assert.equal(bank.length, 1803);
   assert.equal(createHash('sha256').update(source).digest('hex'), metadata.bankSha256);
   assert.equal(metadata.questions.length, bank.length);
   assert.equal(new Set(bank.map(question => question.id)).size, bank.length);
   assert.equal(SUBJECTS.length, 8);
   for (const question of bank) {
     assert.ok(SUBJECTS.some(subject => subject.id === question.subject));
-    const identity = JSON.stringify([question.stem, question.choices]);
-    assert.equal(question.id, 'mbe-' + createHash('sha256').update(identity).digest('hex').slice(0, 24));
+    assert.ok(question.source?.questionNumber > 0);
   }
   assert.deepEqual(Object.fromEntries(SUBJECTS.map(subject => [subject.id, filterSubject(bank, subject.id).length])), {
-    'civil-procedure': 282, 'constitutional-law': 239, contracts: 268,
-    'criminal-law': 157, 'criminal-procedure': 77, evidence: 265,
-    'real-property': 248, torts: 99,
+    'civil-procedure': 297, 'constitutional-law': 243, contracts: 273,
+    'criminal-law': 165, 'criminal-procedure': 83, evidence: 265,
+    'real-property': 248, torts: 229,
   });
   assert.equal(filterSubject(bank, 'all').length, bank.length);
 });

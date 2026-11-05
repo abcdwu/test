@@ -1,5 +1,5 @@
-import { esc } from './common.js';
-import { mistakeStore } from './browser-store.js';
+import { esc } from './common.js?v=3';
+import { mistakeStore } from './browser-store.js?v=3';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';
 const panel = document.getElementById('sync-panel');
