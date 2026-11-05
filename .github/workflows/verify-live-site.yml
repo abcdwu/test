@@ -2,22 +2,19 @@ name: Verify published practice site
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [pages build and deployment]
-    types: [completed]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   verify-public-assets:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:

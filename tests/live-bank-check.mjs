@@ -10,14 +10,14 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const release = process.env.GITHUB_SHA || Date.now().toString();
 async function get(base, path) {
   const url = new URL(path, base);
-  url.searchParams.set('check', release);
+  url.searchParams.set('check', release + '-' + Date.now());
   const response = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'Cache-Control': 'no-cache' } });
   assert.equal(response.status, 200, 'Public deployment asset must be available');
   return Buffer.from(await response.arrayBuffer());
 }
 for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.dev/']) {
   let failure;
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 24; attempt++) {
     try {
       const page = (await get(base, '')).toString();
       assert.ok(page.includes(entry), 'Latest entry module must be published');
@@ -32,7 +32,7 @@ for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.
       failure = null; break;
     } catch (error) {
       failure = error;
-      if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 5000));
+      if (attempt < 23) await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
   if (failure) throw failure;
