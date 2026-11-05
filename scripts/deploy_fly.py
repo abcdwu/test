@@ -15,7 +15,7 @@ region = config["primary_region"]
 def fly(*args, capture=False, input_text=None):
     return subprocess.run(
         ["flyctl", *args, "--app", app], check=True, text=True,
-        input=input_text, capture_output=capture,
+        input=input_text, stdout=subprocess.PIPE if capture else None,
     ).stdout
 
 
