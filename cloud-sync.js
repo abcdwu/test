@@ -105,7 +105,7 @@ window.addEventListener('storage', event => {
 });
 setInterval(() => { if (!document.hidden) sync(); }, 30_000);
 
-fetch('cloud-config.json?v=2').then(response => response.ok ? response.json() : null).then(async config => {
+fetch('cloud-config.json?v=4', { cache: 'no-store' }).then(response => response.ok ? response.json() : null).then(async config => {
   await mistakeStore.ready;
   if (!config?.apiBase) { render(); return; }
   const url = new URL(config.apiBase);

@@ -1,0 +1,28 @@
+name: Verify deployed private sync
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - cloud-config.json
+      - tests/live-sync-check.mjs
+      - .github/workflows/verify-sync.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-sync:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tests/live-sync-check.mjs
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}

@@ -51,6 +51,8 @@ CHROMIUM_PATH=/usr/bin/chromium node tests/source-ui-regressions.cjs
 
 不同设备使用各自的递增计数，合并时逐设备取最大值再相加，重复同步不会重复计数。导入旧备份时，旧的累计次数取最大值，后续新计数按设备独立累计。同步遇到并发本机操作时会继续补传。
 
+`Verify deployed private sync` 工作流使用仓库中的 `LOGIN_PASSWORD` 验证线上健康、网站来源限制、两个独立会话的登录和一致读取，以及退出后令牌失效。该检查不写入错题，也不输出密码、令牌或错题内容。跨浏览器写入、断网补传与恢复由隔离的浏览器回归覆盖。
+
 IndexedDB、云端 API 和备份均保存完整题目快照。所有题干、选项和解析输出前转义。错题页面另有折叠的 JSON 导出/导入选项；正常使用云同步时无需手动备份。清理网站数据前，应确认已同步。
 
 ## 首次部署 Fly.io（维护者操作一次）
@@ -76,9 +78,9 @@ PR 合并后，在仓库 **Actions → Deploy private mistake sync → Run workf
 
 ### 本地 CLI 部署（替代方式）
 
-当前 `cloud-config.json` 的 `apiBase` 留空，因此仅启用本机保存；不会向不存在的服务发送请求。需要 Fly.io 授权才能创建应用、机器和磁盘，代码中没有部署凭据或私人密码。
+当前 `cloud-config.json` 已接入 `https://abcdwu-mbe-mistakes.fly.dev`。用户在网站输入私人密码后自动同步；密码配置在 Fly Secret，部署令牌配置在 GitHub Actions Secret。前端每次重新获取同步配置，避免缓存旧的本机保存设置。
 
-配置草案：应用名 `abcdwu-mbe-mistakes`、东京 `nrt`、共享 CPU、256 MB 内存、1 GB 持久化磁盘。应用名需在创建时确认可用。后台闲置时可停止机器，下次访问自动启动，首次连接可能稍慢。可在部署前改为新加坡 `sin`；国内网络体验需实测，地区本身不是可达性保证。
+已部署配置：应用名 `abcdwu-mbe-mistakes`、东京 `nrt`、共享 CPU、256 MB 内存、1 GB 持久化磁盘，每日卷快照保留 30 天。后台闲置时可停止机器，下次访问自动启动，首次连接可能稍慢。国内网络体验需实测，地区本身不是可达性保证。
 
 在已安装 flyctl 并完成 `fly auth login` 的终端中，从仓库根目录执行：
 
