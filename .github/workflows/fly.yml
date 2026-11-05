@@ -2,10 +2,6 @@ name: Deploy private mistake sync
 
 on:
   workflow_dispatch:
-  # One-time bootstrap deployment from this reviewed feature branch.
-  push:
-    branches: [codex/subject-timers-mistake-sync]
-    paths: ['.github/workflows/fly.yml']
 
 permissions:
   contents: read
