@@ -1,0 +1,9 @@
+{
+  "name": "mbe-practice",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "server": "node server/start.js"
+  }
+}

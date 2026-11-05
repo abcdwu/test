@@ -1,0 +1,6 @@
+*
+!package.json
+!common.js
+!mistake-store.js
+!server/
+!server/**

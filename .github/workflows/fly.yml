@@ -1,0 +1,37 @@
+name: Deploy private mistake sync
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fly-mistake-sync
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm test
+      - name: Check deployment authorization
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        run: |
+          test -n "$FLY_API_TOKEN" || { echo 'Add repository secret FLY_API_TOKEN first.'; exit 1; }
+          test "${#LOGIN_PASSWORD}" -ge 1 || { echo 'Set LOGIN_PASSWORD to at least 1 character.'; exit 1; }
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Create persistent storage and deploy one machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        run: python3 scripts/deploy_fly.py
