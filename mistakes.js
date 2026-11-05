@@ -1,4 +1,4 @@
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=6';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=7';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';
@@ -59,6 +59,7 @@ function render() {
     try {
       if (file.size > 32 * 1024 * 1024) throw new Error('备份文件过大');
       const result = await mistakeStore.restore(await file.text());
+      await refreshSavedQuestions();
       backupMessage = `恢复完成：新增 ${result.added} 道，目前共 ${result.total} 道错题。`;
       backupError = false;
     } catch {
@@ -71,9 +72,24 @@ function render() {
 }
 
 window.addEventListener('storage', event => { if (event.key === STORAGE_KEY || event.key === null) render(); });
-window.addEventListener('mbe:cloud-synced', render);
-window.addEventListener('mbe:local-refreshed', render);
-mistakeStore.ready.then(async () => {
-  try { await mistakeStore.refreshQuestions(await loadBank()); } catch { /* Keep existing snapshots available when the bank cannot be loaded. */ }
-  render();
-});
+const loadedSubjects = new Set();
+const knownQuestions = new Map();
+let refreshing = false;
+async function refreshSavedQuestions() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    for (const key of new Set(mistakeStore.read().map(entry => entry.question.subject))) {
+      if (loadedSubjects.has(key)) continue;
+      for (const question of await loadBank(key)) knownQuestions.set(question.id, question);
+      loadedSubjects.add(key);
+    }
+    if (knownQuestions.size) await mistakeStore.refreshQuestions([...knownQuestions.values()]);
+    render();
+  } catch { /* Saved full snapshots remain usable without a bank download. */ }
+  finally { refreshing = false; }
+}
+function dataChanged() { render(); refreshSavedQuestions(); }
+window.addEventListener('mbe:cloud-synced', dataChanged);
+window.addEventListener('mbe:local-refreshed', dataChanged);
+mistakeStore.ready.then(() => { render(); refreshSavedQuestions(); });

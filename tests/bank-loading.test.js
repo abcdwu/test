@@ -1,50 +1,64 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { loadBank } from '../common.js';
-
-const question = { stem: 'Test question', choices: ['A', 'B', 'C', 'D'], answer: 'A', explanation: 'Test explanation' };
-const source = gzipSync(JSON.stringify([question])).toString('base64');
-const metadata = { bankSha256: createHash('sha256').update(source).digest('hex'), questions: [{ id: 'test', subject: 'torts' }] };
-const response = path => path.startsWith('questions.txt') ? new Response(source) : Response.json(metadata);
-async function withFetch(mock, run) {
-  const original = globalThis.fetch;
-  globalThis.fetch = mock;
-  try { await run(); } finally { globalThis.fetch = original; }
+import { createRequire } from 'node:module';
+import { createBankLoader } from '../bank-loader.js';
+const { bankFixture } = createRequire(import.meta.url)('./bank-fixture.cjs');
+const question = { id: 'test', subject: 'torts', stem: 'Test question', choices: ['A','B','C','D'], answer: 'A', explanation: 'Full explanation' };
+const fixture = bankFixture([question]);
+const origins = ['https://primary.invalid/bank/', 'https://mirror.invalid/bank/'];
+const noCache = { get: async () => null, set: async () => {} };
+const options = { origins, cache: noCache, mirrorDelay: 2, timeoutMs: 80 };
+function response(url) {
+  const file = new URL(url).pathname.split('/').pop();
+  return file === 'manifest.json' ? Response.json(fixture.manifest) : new Response(fixture.files.get(file));
 }
 
-test('bank loads after a transient Safari-style fetch failure and a truncated response body', async () => {
-  const calls = new Map();
-  await withFetch(async path => {
-    const attempt = (calls.get(path) ?? 0) + 1; calls.set(path, attempt);
-    if (path.startsWith('questions.txt') && attempt === 1) throw new TypeError('Load failed');
-    if (path.startsWith('questions.txt') && attempt === 2) return { ok: true, text: async () => { throw new TypeError('Load failed'); } };
-    return response(path);
-  }, async () => {
-    const bank = await loadBank(); assert.equal(bank.length, 1); assert.equal(bank[0].id, 'test');
-    assert.equal(calls.get('questions.txt?v=3'), 3);
-  });
+test('an interrupted subject body recovers from the independent mirror with full content', async () => {
+  let mirrorFiles = 0;
+  const loader = createBankLoader({ ...options, fetcher: async url => {
+    if (!url.includes('manifest.json') && url.includes('primary.invalid')) return { ok: true, arrayBuffer: async () => { throw new TypeError('Load failed'); } };
+    if (!url.includes('manifest.json') && url.includes('mirror.invalid')) mirrorFiles++;
+    return response(url);
+  } });
+  assert.deepEqual(await loader.bank('torts'), [question]); assert.equal(mirrorFiles, 1);
 });
 
-test('persistent network failure stops after three attempts with a useful message', async () => {
-  let failures = 0;
-  await withFetch(async path => {
-    if (path.startsWith('questions.txt')) { failures++; throw new TypeError('Load failed'); }
-    return response(path);
-  }, async () => {
-    await assert.rejects(loadBank(), /题库文件未能下载完成/); assert.equal(failures, 3);
-  });
-});
-
-test('mixed cached bank versions are re-fetched, and consistently tampered data is never accepted', async () => {
-  let metadataCalls = 0;
-  await withFetch(async path => {
-    if (path.startsWith('question-metadata')) {
-      metadataCalls++; return Response.json(metadataCalls === 1 ? { ...metadata, bankSha256: 'stale' } : metadata);
+test('a stalled primary does not hold up the mirror, and pending requests are cancelled', async () => {
+  let cancelled = 0;
+  const loader = createBankLoader({ ...options, fetcher: (url, { signal }) => {
+    if (url.includes('primary.invalid')) {
+      signal.addEventListener('abort', () => cancelled++);
+      return new Promise(() => {});
     }
-    return response(path);
-  }, async () => { assert.equal((await loadBank()).length, 1); assert.equal(metadataCalls, 2); });
-  await withFetch(async path => path.startsWith('questions.txt') ? new Response(source) : Response.json({ ...metadata, bankSha256: 'tampered' }),
-    async () => { await assert.rejects(loadBank(), /版本不一致/); });
+    return Promise.resolve(response(url));
+  } });
+  assert.deepEqual(await loader.bank('torts'), [question]); assert.equal(cancelled, 2);
+});
+
+test('timeouts and permanent failures remain bounded and produce a retry message', async () => {
+  const loader = createBankLoader({ ...options, timeoutMs: 10, fetcher: () => new Promise(() => {}) });
+  await assert.rejects(loader.bank('torts'), /暂时无法下载题库/);
+});
+
+test('a working primary never waits for an unavailable Fly mirror', async () => {
+  const loader = createBankLoader({ ...options, fetcher: url => url.includes('primary.invalid')
+    ? Promise.resolve(response(url)) : new Promise(() => {}) });
+  assert.deepEqual(await loader.bank('torts'), [question]);
+});
+
+test('verified subject cache works when both download sources fail, and damaged cache is replaced', async () => {
+  const values = new Map();
+  const cache = { get: async key => values.get(key), set: async (key, value) => values.set(key, value) };
+  const online = createBankLoader({ ...options, cache, fetcher: async url => response(url) });
+  await online.bank('torts');
+  const offline = createBankLoader({ ...options, cache, fetcher: async () => { throw new TypeError('Load failed'); } });
+  assert.deepEqual(await offline.bank('torts'), [question]);
+  values.set(fixture.manifest.subjects.torts.sha256, new TextEncoder().encode('damaged').buffer);
+  const recover = createBankLoader({ ...options, cache, fetcher: async url => response(url) });
+  assert.deepEqual(await recover.bank('torts'), [question]);
+});
+
+test('downloaded bytes must match the catalogue hash; tampered data is never accepted', async () => {
+  const loader = createBankLoader({ ...options, fetcher: async url => url.includes('manifest.json') ? response(url) : new Response('tampered') });
+  await assert.rejects(loader.bank('torts'), /暂时无法下载题库/);
 });

@@ -5,12 +5,13 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mergeEntry, validateEntries } from '../mistake-store.js';
 import { mergeAttempts, validateAttempts } from '../progress.js';
+import { serveStatic } from './static.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
 const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function createApi({ databasePath, loginPassword, allowedOrigins, trustFlyProxy = false }) {
+export function createApi({ databasePath, loginPassword, allowedOrigins, trustFlyProxy = false, staticDirectory = null }) {
   if (typeof loginPassword !== 'string' || loginPassword.length < 1) {
     throw new Error('Set LOGIN_PASSWORD to a private password of at least 1 character');
   }
@@ -60,7 +61,8 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     }
     if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
     const path = request.url?.split('?')[0];
-    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts'] }); return; }
+    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts', ...(staticDirectory ? ['public-bank'] : [])] }); return; }
+    if (serveStatic(request, response, staticDirectory)) return;
     try {
       if (path === '/auth/login' && request.method === 'POST') {
         const address = trustFlyProxy ? request.headers['fly-client-ip'] || request.socket.remoteAddress : request.socket.remoteAddress;

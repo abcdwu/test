@@ -1,10 +1,12 @@
 """One-time/ongoing deployment from GitHub Actions with app-scoped credentials."""
 import ipaddress
+import hashlib
 import json
 import os
 import subprocess
 import tomllib
 import urllib.request
+from pathlib import Path
 
 with open("fly.toml", "rb") as config_file:
     config = tomllib.load(config_file)
@@ -59,6 +61,19 @@ def api(path, body=None, token=None, method="POST"):
 
 health = api("/health", method="GET")
 assert health["ok"] and "quiz-attempts" in health.get("features", [])
+assert "public-bank" in health.get("features", [])
+manifest = api("/bank/manifest.json", method="GET")
+assert manifest == json.loads(Path("bank/manifest.json").read_text())
+for info in manifest["subjects"].values():
+    request = urllib.request.Request(base + "/bank/" + info["file"], headers={"Origin": "https://test.chaoxu.me"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        assert response.headers.get("Access-Control-Allow-Origin") == "https://test.chaoxu.me"
+        assert hashlib.sha256(response.read()).hexdigest() == info["sha256"]
+with urllib.request.urlopen(base + "/", timeout=60) as response:
+    assert response.read() == Path("index.html").read_bytes()
+request = urllib.request.Request(base + "/sources/torts.pdf", headers={"Range": "bytes=0-31", "Origin": "https://test.chaoxu.me"})
+with urllib.request.urlopen(request, timeout=60) as response:
+    assert response.status == 206 and len(response.read()) == 32
 session = api("/auth/login", {"password": password})
 try:
     synced = api("/api/sync", {"entries": [], "attempts": []}, session["token"])
@@ -66,7 +81,7 @@ try:
 finally:
     api("/auth/session", token=session["token"], method="DELETE")
 
-print("Deployment and authenticated sync check passed:", base)
+print("Deployment, public bank mirror, PDF range and authenticated sync checks passed:", base)
 if os.environ.get("GITHUB_STEP_SUMMARY"):
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
         summary.write(f"Private API deployed: {base}\n\nHealth and authenticated sync checks passed.\n"

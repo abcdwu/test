@@ -1,3 +1,4 @@
+const { routeBank } = require('./bank-fixture.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -14,8 +15,7 @@ const metadata = { bankSha256: crypto.createHash('sha256').update(source).digest
 
 async function context(browser, apiBase = '') {
   const context = await browser.newContext();
-  await context.route('**/questions.txt*', r => r.fulfill({ body: source }));
-  await context.route('**/question-metadata.json*', r => r.fulfill({ json: metadata }));
+  await routeBank(context, bank);
   await context.route('**/cloud-config.json*', r => r.fulfill({ json: { apiBase } }));
   return context;
 }
@@ -69,6 +69,7 @@ async function login(page) {
     assert.equal(await oldTab.evaluate(() => window.legacyClosed), true);
     const legacy = await upgraded.evaluate(async () => {
       const { mistakeStore } = await import('/browser-store.js?v=5');
+      await mistakeStore.ready;
       return { entries: mistakeStore.read(), attempts: mistakeStore.readAttempts() };
     });
     assert.equal(legacy.entries[0].wrongCount, 1); assert.deepEqual(legacy.attempts, []);
@@ -81,7 +82,7 @@ async function login(page) {
     await quiz(first, 10, 8, '80.0%'); await first.locator('#again').click();
     await quiz(first, 20, 10, '60.0%');
     assert.match(await first.locator('#cumulative-summary').textContent(), /累计答对 18 \/ 30 题/);
-    await home(first); assert.equal(await first.locator('#cumulative-rate').textContent(), '60.0%');
+    await home(first); await first.waitForFunction(() => document.querySelector('#cumulative-rate')?.textContent === '60.0%');
     await first.setViewportSize({ width: 390, height: 844 });
     assert.equal(await first.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     console.log('PASS 8/10 then 10/20 displays cumulative 18/30 = 60.0%, persists after reload and fits mobile');
@@ -96,7 +97,7 @@ async function login(page) {
       await restore.locator('#backup-file').setInputFiles({ name: 'backup.json', mimeType: 'application/json', buffer: backup });
       await restore.getByText(/恢复完成/).waitFor();
     }
-    await home(restore); assert.equal(await restore.locator('#cumulative-rate').textContent(), '60.0%');
+    await home(restore); await restore.waitForFunction(() => document.querySelector('#cumulative-rate')?.textContent === '60.0%');
     console.log('PASS backup and repeated restore preserve cumulative results without double counting');
 
     await home(first); await login(first);

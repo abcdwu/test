@@ -1,3 +1,4 @@
+const { routeBank } = require('./bank-fixture.cjs');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -23,7 +24,7 @@ async function submitAllBlank(page,count=5){await page.getByRole('button',{name:
   page.once('dialog',d=>d.accept());await page.locator('#exit').click();
  }
  console.log('PASS eight subject selections draw from the correct bank');
- await page.locator('#subject').selectOption('torts');await page.getByRole('button',{name:'5 题',exact:true}).click();await page.locator('#start').click();
+ await page.locator('#subject').selectOption('torts');await page.getByRole('button',{name:'5 题',exact:true}).click();await page.locator('#start').click();await page.locator('.card .question').waitFor();
  await page.clock.runFor(2200);assert.equal(await page.locator('#clock').textContent(),'00:02');
  let stem=await page.locator('.card .question').textContent();let q=bank.find(q=>q.stem===stem);await page.locator(`[data-choice="${'ABCD'.indexOf(q.answer)}"]`).click();
  await page.locator('#next').click();assert.equal(await page.locator('#clock').textContent(),'00:02');
@@ -62,13 +63,10 @@ async function submitAllBlank(page,count=5){await page.getByRole('button',{name:
  }finally{await new Promise(r=>api.server.close(r));api.closeDatabase();fs.rmSync(temp,{recursive:true,force:true});}
  const original=bank.find(q=>q.subject==='torts'&&q.source?.explanationPages.length>1);
  assert.ok(original,'rebuilt bank includes source page references');
- const fixture=zlib.gzipSync(JSON.stringify([{stem:original.stem,choices:original.choices,answer:original.answer,explanation:original.explanation}])).toString('base64');
- const fixtureMetadata={bankSha256:createHash('sha256').update(fixture).digest('hex'),questions:[{id:original.id,subject:original.subject,source:original.source}]};
  const sourceContext=await browser.newContext({deviceScaleFactor:3});
- await sourceContext.route('**/questions.txt*',r=>r.fulfill({body:fixture}));
- await sourceContext.route('**/question-metadata.json*',r=>r.fulfill({json:fixtureMetadata}));
+ await routeBank(sourceContext,[original]);
  const sourcePage=await sourceContext.newPage();let pdfRequests=0;sourcePage.on('request',r=>{if(r.url().includes('/sources/'))pdfRequests++});
- await open(sourcePage);await sourcePage.locator('#start').click();
+ await open(sourcePage);await sourcePage.locator('#start').click();await sourcePage.locator('.card .question').waitFor();
  assert.equal(pdfRequests,0,'closed question pages do not download the PDF');
  assert.equal(await sourcePage.locator('.source-explanation').count(),0);
  assert.deepEqual(await sourcePage.locator('.pdf-source-page').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.pdfPage))),original.source.questionPages);
