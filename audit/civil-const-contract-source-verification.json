@@ -1,0 +1,15 @@
+{
+  "checkedRecords": 813,
+  "checkedByDocument": {
+    "contracts": 273,
+    "civil-procedure": 297,
+    "constitutional-law": 243
+  },
+  "comparison": "Whitespace-only normalization; all punctuation, capitalization, words, and page spans retained for comparison",
+  "mismatchCount": 0,
+  "mismatches": [],
+  "actualSourcePdfHashesVerified": true,
+  "verifiedSourcePdfCount": 3,
+  "legacyIdsCheckedAgainstGitHead": 789,
+  "legacyIdMismatches": []
+}

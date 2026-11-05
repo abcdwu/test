@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "server": "node server/start.js"
+    "server": "node server/start.js",
+    "audit:bank": "python3 scripts/audit_bank.py",
+    "build:bank": "python3 scripts/rebuild_bank.py"
   }
 }

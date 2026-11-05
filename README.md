@@ -6,18 +6,34 @@ GitHub Pages 提供页面，Fly.io 提供可选的私人错题同步 API；无�
 
 ```sh
 python3 -m http.server 8080
+```
+
+打开 `http://localhost:8080`。在另一终端运行以下检查；测试需要 Node.js 24，题库审计需要 Python 3：
+
+```sh
+npm run audit:bank
 npm test
 ```
 
-打开 `http://localhost:8080`。`npm test` 使用 Node.js 24，验证全部题库分类、稳定 ID、计时、错题合并、备份、API 登录、拒绝未授权访问及 SQLite 重启恢复。
+审计核对原 PDF 摘要、题目和页面覆盖、答案引用及旧题 ID。程序测试验证八科题数、稳定 ID、计时、错题合并、备份、API 登录、拒绝未授权访问及 SQLite 重启恢复。
+
+从仓库中的八份原 PDF 重新生成题库需要 [PyMuPDF](https://pypi.org/project/PyMuPDF/)；普通预览和运行前端不需要它：
+
+```sh
+python3 -m pip install PyMuPDF
+npm run build:bank
+npm run audit:bank
+npm test
+```
 
 浏览器回归脚本使用 Playwright（测试环境自行提供）和正在运行的本地页面服务器：
 
 ```sh
 CHROMIUM_PATH=/usr/bin/chromium node tests/browser-check.cjs
+CHROMIUM_PATH=/usr/bin/chromium node tests/source-ui-regressions.cjs
 ```
 
-省略 `CHROMIUM_PATH` 则使用 Playwright 默认安装的 Chromium。脚本验证八科筛选、正计时、倒计时自动交卷、刷新保留、错题重练、导出恢复、手机布局、多标签页并发、密码登录、断网后补传和跨设备恢复。
+省略 `CHROMIUM_PATH` 则使用 Playwright 默认安装的 Chromium。脚本验证八科筛选、正计时、倒计时自动交卷、刷新保留、错题重练、导出恢复、手机布局、多标签页并发、密码登录、断网后补传、跨设备恢复，以及原题和解析 PDF 页面的加载与显示。
 
 ## 练习
 
@@ -97,10 +113,14 @@ SQLite 数据库位于持久化磁盘 `/data/mistakes.sqlite`。`fly.toml` 请�
 
 官方文档：[区域](https://fly.io/docs/reference/regions/)、[磁盘快照](https://fly.io/docs/volumes/snapshots/)、[应用配置](https://fly.io/docs/reference/configuration/)、[费用](https://fly.io/docs/about/pricing/)。
 
-## 题库科目数据
+## 题库来源与完整性
 
-原始 `questions.txt` 保持原样。`question-metadata.json` 为全部 1,635 道题提供科目和由题干、选项生成的稳定 ID，并保存原题库 SHA-256；加载时检查版本一致性。
+已按八份原 PDF 全量重建为 **1,803 题**，保留原有 1,635 题并补回 168 题。八科数量为：民诉 297、宪法 243、合同 273、刑法 165、刑诉 83、证据 265、不动产 248、侵权 229。Torts 从 99 题恢复为 229 题，补回 130 题。刑诉原文件开头两道实体法题归入刑法。
 
-科目来自现有题库连续分组：民诉 282、证据 265、刑诉 77、合同 268、侵权 99、刑法 157、宪法 239、不动产 248。原刑诉分组开头两道关于犯罪未遂、事后从犯的实体法题归入刑法。生成依据和范围见 `scripts/build_metadata.py`。替换或重排题库前应重新核对原始材料的分组，再运行 `python3 scripts/build_metadata.py`。
+全部 5,357 页均有来源归属，包含 836 个含图页。每题保留原文件、题号、题干页、完整解析页和答案讨论引用；原题、图表和解析可直接通过本站托管的 PDF.js 查看。PDF.js 6.5.438 及其字体、解码资源随站点提供，不依赖外部 PDF 服务或 CDN。来源和许可见 [PDF.js 说明](vendor/pdfjs/README.md)。
+
+本次核验确认题库与原文的覆盖及对应关系。原材料没有独立答案键；各题答案依据原解析明确讨论的三个错误选项确定，并保留页码引用，**不作独立法律答案认证**。逐科结果、旧提取缺陷和核验范围见 [完整性审计](audit/REPORT.md)。
+
+`questions.txt`、`question-metadata.json` 由 `npm run build:bank` 一起生成，使用 SHA-256 检查版本一致性。原文件及摘要见 `sources/manifest.json`，完整页面归属见 `audit/source-coverage.json`。生成器不再按题干前缀去重，也不静默跳过无法解析的题目。全部 **1,635 个旧 ID 保持不变**，题目重排和补题后仍对应既有错题记录。
 
 前端需要 HTTPS 或 localhost，以及支持 IndexedDB、DecompressionStream、Web Crypto 的现代浏览器。
