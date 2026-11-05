@@ -32,6 +32,7 @@ npm test
 CHROMIUM_PATH=/usr/bin/chromium node tests/browser-check.cjs
 CHROMIUM_PATH=/usr/bin/chromium node tests/source-ui-regressions.cjs
 CHROMIUM_PATH=/usr/bin/chromium node tests/progress-browser.cjs
+CHROMIUM_PATH=/usr/bin/chromium node tests/loading-browser.cjs
 ```
 
 省略 `CHROMIUM_PATH` 则使用 Playwright 默认安装的 Chromium。脚本验证八科筛选、正计时、倒计时自动交卷、刷新保留、错题重练、导出恢复、手机布局、多标签页并发、密码登录、断网后补传、跨设备恢复，以及原题和解析 PDF 页面的加载与显示。
@@ -39,6 +40,8 @@ CHROMIUM_PATH=/usr/bin/chromium node tests/progress-browser.cjs
 ## 练习
 
 八科下拉菜单包含民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法和侵权法，也可选择混合全部科目。每组可选 5、10、15、20 题；题目不足时使用实际数量。
+
+题库下载遇到网络中断会自动重试，单次请求超时为 45 秒，最多尝试三次。仍失败时显示中文说明与“重新载入题库”按钮，恢复联网也会自动重试。下载后的文件仍需通过摘要和题数校验；缓存版本不一致时重新获取文件，不跳过校验。
 
 自然计时从零开始。倒计时按实际题数 × 108 秒计算，时间到自动交卷；后台停留也计入用时。切换题目或答案不会重置时间，交卷和退出后停止计时。刷新或离开会提示本次进度尚未保存。
 
