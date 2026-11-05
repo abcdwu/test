@@ -4,6 +4,7 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypt
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mergeEntry, validateEntries } from '../mistake-store.js';
+import { mergeAttempts, validateAttempts } from '../progress.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
@@ -19,12 +20,15 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
   db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000;
     CREATE TABLE IF NOT EXISTS mistakes (id TEXT PRIMARY KEY, entry TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS quiz_attempts (id TEXT PRIMARY KEY, attempt TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL);
     INSERT OR IGNORE INTO sync_state VALUES (1, 0);`);
   const passwordSalt = randomBytes(32);
   const passwordHash = scryptSync(loginPassword, passwordSalt, 64);
   const failures = new Map();
   const readEntries = () => db.prepare('SELECT entry FROM mistakes ORDER BY id').all().map(row => JSON.parse(row.entry));
+  const readAttempts = () => db.prepare('SELECT attempt FROM quiz_attempts ORDER BY id').all().map(row => JSON.parse(row.attempt));
+  const saveAttempt = db.prepare('INSERT INTO quiz_attempts(id, attempt) VALUES (?, ?)');
   const saveEntry = db.prepare('INSERT INTO mistakes(id, entry) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET entry=excluded.entry');
 
   function respond(response, status, body) {
@@ -56,7 +60,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     }
     if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
     const path = request.url?.split('?')[0];
-    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true }); return; }
+    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts'] }); return; }
     try {
       if (path === '/auth/login' && request.method === 'POST') {
         const address = trustFlyProxy ? request.headers['fly-client-ip'] || request.socket.remoteAddress : request.socket.remoteAddress;
@@ -96,12 +100,19 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
       if (path === '/api/sync' && request.method === 'POST') {
         const body = await readJson(request);
         validateEntries(body.entries);
+        validateAttempts(body.attempts ?? []);
         if (body.entries.length > 10_000) throw new Error('Too many entries');
         db.exec('BEGIN IMMEDIATE');
         let revision;
         try {
           const existing = new Map(readEntries().map(entry => [entry.question.id, entry]));
           let changed = false;
+          const previousAttempts = readAttempts();
+          const allAttempts = mergeAttempts(previousAttempts, body.attempts ?? []);
+          const known = new Set(previousAttempts.map(attempt => attempt.id));
+          for (const attempt of allAttempts) if (!known.has(attempt.id)) {
+            saveAttempt.run(attempt.id, JSON.stringify(attempt)); changed = true;
+          }
           for (const entry of body.entries) {
             const merged = mergeEntry(existing.get(entry.question.id), entry);
             if (JSON.stringify(merged) !== JSON.stringify(existing.get(entry.question.id))) {
@@ -114,6 +125,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
         } catch (error) { db.exec('ROLLBACK'); throw error; }
         respond(response, 200, {
           entries: body.revision === revision ? [] : readEntries(),
+          attempts: body.revision === revision ? [] : readAttempts(),
           revision, syncedAt: new Date().toISOString(),
         }); return;
       }

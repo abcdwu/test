@@ -9,8 +9,8 @@ const root = path.resolve(__dirname, '..');
 const metadata=JSON.parse(fs.readFileSync(path.join(root,'question-metadata.json')));
 const bank=JSON.parse(zlib.gunzipSync(Buffer.from(fs.readFileSync(path.join(root,'questions.txt'),'utf8'),'base64'))).map((q,i)=>({...q,...metadata.questions[i]}));
 const errors=[];
-async function entries(page) { return page.evaluate(async()=>{const {mistakeStore}=await import('/browser-store.js?v=3');await mistakeStore.ready;return mistakeStore.read()}); }
-async function record(page,questions) {return page.evaluate(async(q)=>{const {mistakeStore}=await import('/browser-store.js?v=3');await mistakeStore.ready;await mistakeStore.record(q,q.map(()=>null));},questions);}
+async function entries(page) { return page.evaluate(async()=>{const {mistakeStore}=await import('/browser-store.js?v=5');await mistakeStore.ready;return mistakeStore.read()}); }
+async function record(page,questions) {return page.evaluate(async(q)=>{const {mistakeStore}=await import('/browser-store.js?v=5');await mistakeStore.ready;await mistakeStore.record(q,q.map(()=>null));},questions);}
 async function open(page,pathname='') {page.on('pageerror',e=>errors.push(e.message));await page.goto(`${url}/${pathname}`);}
 async function submitAllBlank(page,count=5){await page.getByRole('button',{name:`${count} 题`,exact:true}).click();await page.getByRole('button',{name:'开始练习',exact:true}).click();for(let i=0;i<count-1;i++)await page.locator('#next').click();page.once('dialog',d=>d.accept());await page.locator('#submit').click();await page.getByRole('heading',{name:'练习完成。'}).waitFor();}
 (async()=>{
@@ -46,7 +46,7 @@ async function submitAllBlank(page,count=5){await page.getByRole('button',{name:
  await restored.setViewportSize({width:390,height:844});await restored.goto(url);await restored.locator('#start').waitFor();assert.equal(await restored.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await restored.screenshot({path:'/tmp/mbe-mobile.png',fullPage:true});
  console.log('PASS backup round trip, repeated restore and mobile layout');
  const tab=await fresh.newPage();await open(tab);await tab.locator('#start').waitFor();await Promise.all([record(restored,[bank[0]]),record(tab,[bank[1]])]);
- await restored.waitForFunction(async()=>{const {mistakeStore}=await import('/browser-store.js?v=3');return mistakeStore.read().length===6});assert.equal((await entries(restored)).length,6);
+ await restored.waitForFunction(async()=>{const {mistakeStore}=await import('/browser-store.js?v=5');return mistakeStore.read().length===6});assert.equal((await entries(restored)).length,6);
  console.log('PASS simultaneous tabs preserve both edits');
  const {createApi}=await import(root+'/server/api.js');const temp=fs.mkdtempSync('/tmp/mbe-cloud-ui-');const api=createApi({databasePath:path.join(temp,'db.sqlite'),loginPassword:'test-only-private-password',allowedOrigins:[url]});await new Promise(r=>api.server.listen(0,'127.0.0.1',r));const apiBase=`http://127.0.0.1:${api.server.address().port}`;
  try{
@@ -55,7 +55,7 @@ async function submitAllBlank(page,count=5){await page.getByRole('button',{name:
   await cloudContext.setOffline(true);await record(cloud,[bank[1]]);await cloud.getByText(/暂未同步/).waitFor();assert.equal((await entries(cloud)).length,2);await cloudContext.setOffline(false);await cloud.getByText(/错题已自动同步/).waitFor();
   const otherContext=await browser.newContext();await otherContext.route('**/cloud-config.json*',r=>r.fulfill({json:{apiBase}}));const other=await otherContext.newPage();await open(other,'mistakes.html');await other.locator('#sync-toggle').click();await other.locator('#cloud-password').fill('test-only-private-password');await other.getByRole('button',{name:'登录并记住此设备'}).click();await other.getByText(/错题已自动同步/).waitFor();await other.locator('details.mistake').nth(1).waitFor();assert.equal((await entries(other)).length,2);
   await other.reload();await other.getByText(/错题已自动同步/).waitFor();await other.getByRole('heading',{name:'错题本。',exact:true}).waitFor();await other.locator('details.mistake').nth(1).waitFor();assert.equal(await other.locator('details.mistake').count(),2);
-  await other.locator('details.mistake').first().locator(':scope > summary').click();await other.evaluate(async()=>{const {sync}=await import('/cloud-sync.js?v=4');await sync()});assert.ok(await other.locator('details.mistake').first().getAttribute('open')!==null);
+  await other.locator('details.mistake').first().locator(':scope > summary').click();await other.evaluate(async()=>{const {sync}=await import('/cloud-sync.js?v=5');await sync()});assert.ok(await other.locator('details.mistake').first().getAttribute('open')!==null);
   await cloud.screenshot({path:'/tmp/mbe-cloud-home.png',fullPage:true});await other.screenshot({path:'/tmp/mbe-mistakes.png',fullPage:true});
   console.log('PASS password login, automatic cloud save, offline retry, fresh-device restore, remembered login and stable expanded reviews');
   await cloudContext.close();await otherContext.close();

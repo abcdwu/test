@@ -31,6 +31,7 @@ npm test
 ```sh
 CHROMIUM_PATH=/usr/bin/chromium node tests/browser-check.cjs
 CHROMIUM_PATH=/usr/bin/chromium node tests/source-ui-regressions.cjs
+CHROMIUM_PATH=/usr/bin/chromium node tests/progress-browser.cjs
 ```
 
 省略 `CHROMIUM_PATH` 则使用 Playwright 默认安装的 Chromium。脚本验证八科筛选、正计时、倒计时自动交卷、刷新保留、错题重练、导出恢复、手机布局、多标签页并发、密码登录、断网后补传、跨设备恢复，以及原题和解析 PDF 页面的加载与显示。
@@ -40,6 +41,10 @@ CHROMIUM_PATH=/usr/bin/chromium node tests/source-ui-regressions.cjs
 八科下拉菜单包含民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法和侵权法，也可选择混合全部科目。每组可选 5、10、15、20 题；题目不足时使用实际数量。
 
 自然计时从零开始。倒计时按实际题数 × 108 秒计算，时间到自动交卷；后台停留也计入用时。切换题目或答案不会重置时间，交卷和退出后停止计时。刷新或离开会提示本次进度尚未保存。
+
+每次交卷显示本次正确率，以及跨所有已完成练习的累计正确率。累计按答对总数除以题目总数计算：先做 10 题对 8 题，再做 20 题对 10 题，累计是 18/30 = 60%，而不是平均两次百分比。重复练习重新计入，未作答按错误计入；未交卷的练习不计入。旧版只保留错题，无法准确还原历史总题数，累计从本功能启用后的首次交卷开始。
+
+每次交卷使用唯一编号，在同一个本机事务中保存错题和成绩。保存重试、重复恢复备份和多设备同步不会重复累计；全部答对也会保存成绩。统计随错题本导出、恢复和云同步。升级浏览器数据库时会保留旧错题，并让仍打开的旧版本数据库连接关闭，避免旧页面覆盖新统计；旧页面需刷新后继续保存。
 
 ## 独立错题本和自动同步
 
@@ -75,6 +80,8 @@ fly tokens create deploy --app abcdwu-mbe-mistakes --name github-deploy --expiry
 不要把令牌或密码写进代码、Issue、PR 或聊天。短期令牌到期不影响已部署的网站，只影响下次部署。
 
 PR 合并后，在仓库 **Actions → Deploy private mistake sync → Run workflow** 手动启动部署。工作流先运行测试，再创建磁盘和共享 IPv4、把密码写入 Fly Secret、部署一台机器并验证登录/同步。它不会随普通代码推送自动创建付费资源。部署完成后，将实际 API 地址写入 `cloud-config.json` 并发布前端。
+
+服务代码更新时，也可由维护者在合并提交标题中明确添加 `[deploy-sync]` 来触发同一部署流程。没有该标记的普通推送仍不部署。累计统计需要新后端：部署检查要求 `/health` 宣告 `quiz-attempts`，并验证同步响应包含统计列表。前端遇到旧后端时继续保留本机统计，显示尚未上传，待服务升级后自动补传。
 
 ### 本地 CLI 部署（替代方式）
 
