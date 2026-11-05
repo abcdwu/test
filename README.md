@@ -39,6 +39,27 @@ IndexedDB、云端 API 和备份均保存完整题目快照。所有题干、选
 
 ## 首次部署 Fly.io（维护者操作一次）
 
+### 通过 GitHub Secrets 授权（推荐）
+
+先在自己已登录 Fly.io 的终端创建应用并生成仅限该应用、有效期 24 小时的部署令牌：
+
+```sh
+fly auth login
+fly apps create abcdwu-mbe-mistakes
+fly tokens create deploy --app abcdwu-mbe-mistakes --name github-deploy --expiry 24h
+```
+
+在 GitHub 仓库 **Settings → Secrets and variables → Actions → New repository secret** 添加：
+
+- `FLY_API_TOKEN`：上一步生成的完整部署令牌。
+- `LOGIN_PASSWORD`：自行选择的网站私人密码，至少 12 个字符。
+
+不要把令牌或密码写进代码、Issue、PR 或聊天。短期令牌到期不影响已部署的网站，只影响下次部署。
+
+PR 合并后，在仓库 **Actions → Deploy private mistake sync → Run workflow** 手动启动部署。工作流先运行测试，再创建磁盘和共享 IPv4、把密码写入 Fly Secret、部署一台机器并验证登录/同步。它不会随普通代码推送自动创建付费资源。部署完成后，将实际 API 地址写入 `cloud-config.json` 并发布前端。
+
+### 本地 CLI 部署（替代方式）
+
 当前 `cloud-config.json` 的 `apiBase` 留空，因此仅启用本机保存；不会向不存在的服务发送请求。需要 Fly.io 授权才能创建应用、机器和磁盘，代码中没有部署凭据或私人密码。
 
 配置草案：应用名 `abcdwu-mbe-mistakes`、东京 `nrt`、共享 CPU、256 MB 内存、1 GB 持久化磁盘。应用名需在创建时确认可用。后台闲置时可停止机器，下次访问自动启动，首次连接可能稍慢。可在部署前改为新加坡 `sin`；国内网络体验需实测，地区本身不是可达性保证。
