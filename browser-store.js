@@ -1,4 +1,4 @@
-import { MistakeStore, STORAGE_KEY } from './mistake-store.js?v=3';
+import { MistakeStore, STORAGE_KEY } from './mistake-store.js?v=5';
 
 // IndexedDB can retain the full question bank without localStorage's small quota.
 // Each mutation reads and writes in one transaction to preserve edits from tabs.
@@ -37,8 +37,10 @@ class BrowserMistakeStore {
 
   async initialize() {
     this.db = await new Promise((resolve, reject) => {
-      const request = indexedDB.open('mbe-mistakes', 1);
-      request.onupgradeneeded = () => request.result.createObjectStore('state');
+      const request = indexedDB.open('mbe-mistakes', 2);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('state')) request.result.createObjectStore('state');
+      };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -56,6 +58,10 @@ class BrowserMistakeStore {
   read() {
     if (this.error) throw this.error;
     return this.core(this.state).read();
+  }
+  readAttempts() {
+    if (this.error) throw this.error;
+    return this.core(this.state).readAttempts();
   }
 
   mutate(method, args) {
@@ -95,6 +101,8 @@ class BrowserMistakeStore {
     return this.mutate(method, args);
   }
   record(...args) { return this.update('record', args); }
+  recordSession(...args) { return this.update('recordSession', args); }
+  mergeAttempts(...args) { return this.update('mergeAttempts', args); }
   merge(...args) { return this.update('merge', args); }
   restore(...args) { return this.update('restore', args); }
   refreshQuestions(questions) {

@@ -1,4 +1,5 @@
 import { answerLetter, SUBJECTS } from './common.js?v=3';
+import { createAttempt, mergeAttempts, sameAttempt, validateAttempts } from './progress.js?v=5';
 
 export const STORAGE_KEY = 'mbe.mistakes.v1';
 export const BACKUP_FORMAT = 'mbe-mistakes';
@@ -56,22 +57,28 @@ export function mergeEntry(previous, incoming) {
   };
 }
 
-export function backupText(entries) {
+export function backupText(entries, attempts = []) {
   validateEntries(entries);
+  validateAttempts(attempts);
   return JSON.stringify({
-    format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), entries,
+    format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), entries, attempts,
   }, null, 2);
 }
 
 export function parseBackup(text) {
+  return parseBackupData(text).entries;
+}
+
+export function parseBackupData(text) {
   const data = JSON.parse(text);
   if (data?.format !== BACKUP_FORMAT || data.version !== 1) throw new Error('请选择 MBE 错题本导出的备份文件');
   validateEntries(data.entries);
-  return data.entries;
+  validateAttempts(data.attempts ?? []);
+  return { entries: data.entries, attempts: data.attempts ?? [] };
 }
 
-export function downloadBackup(entries) {
-  const url = URL.createObjectURL(new Blob([backupText(entries)], { type: 'application/json' }));
+export function downloadBackup(entries, attempts = []) {
+  const url = URL.createObjectURL(new Blob([backupText(entries, attempts)], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = `MBE-错题备份-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
@@ -84,19 +91,32 @@ export function downloadBackup(entries) {
 export class MistakeStore {
   constructor(storage) { this.storage = storage; }
 
-  read() {
+  readData() {
     const raw = this.storage.getItem(STORAGE_KEY);
-    if (raw === null) return [];
+    if (raw === null) return { version: 1, entries: [], attempts: [] };
     const data = JSON.parse(raw);
     if (data?.version !== 1) {
       throw new Error('错题本数据无法读取');
     }
     validateEntries(data.entries);
-    return data.entries;
+    validateAttempts(data.attempts ?? []);
+    return { version: 1, entries: data.entries, attempts: data.attempts ?? [] };
+  }
+
+  read() { return this.readData().entries; }
+  readAttempts() { return this.readData().attempts; }
+  write(entries, attempts = this.readAttempts()) {
+    validateEntries(entries); validateAttempts(attempts);
+    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries, attempts }));
   }
 
   restore(text) {
-    return this.merge(parseBackup(text));
+    const data = parseBackupData(text), previous = this.readData();
+    const attempts = mergeAttempts(previous.attempts, data.attempts);
+    const entries = new Map(previous.entries.map(entry => [entry.question.id, entry]));
+    for (const entry of data.entries) entries.set(entry.question.id, mergeEntry(entries.get(entry.question.id), entry));
+    this.write([...entries.values()], attempts);
+    return { added: entries.size - previous.entries.length, total: entries.size };
   }
 
   merge(incoming) {
@@ -108,7 +128,7 @@ export class MistakeStore {
       if (!previous) { entries.set(entry.question.id, entry); continue; }
       entries.set(entry.question.id, mergeEntry(previous, entry));
     }
-    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: [...entries.values()] }));
+    this.write([...entries.values()]);
     return { added: entries.size - before, total: entries.size };
   }
 
@@ -122,11 +142,11 @@ export class MistakeStore {
       updated++;
       return { ...entry, question };
     });
-    if (updated) this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: refreshed }));
+    if (updated) this.write(refreshed);
     return updated;
   }
 
-  record(questions, answers, now = new Date().toISOString()) {
+  recordEntries(questions, answers, now) {
     const entries = new Map(this.read().map(entry => [entry.question.id, entry]));
     let device = this.storage.getItem(DEVICE_KEY);
     if (!device) { device = crypto.randomUUID(); this.storage.setItem(DEVICE_KEY, device); }
@@ -144,9 +164,27 @@ export class MistakeStore {
       });
       added++;
     }
-    // Never replace unreadable data. setItem is atomic if storage is full or disabled.
-    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries: [...entries.values()] }));
-    return added;
+    return { entries: [...entries.values()], added };
+  }
+
+  record(questions, answers, now = new Date().toISOString()) {
+    const result = this.recordEntries(questions, answers, now);
+    this.write(result.entries); return result.added;
+  }
+
+  recordSession(questions, answers, attempt) {
+    const expected = createAttempt(questions, answers, attempt.id, attempt.completedAt);
+    if (!sameAttempt(expected, attempt)) throw new Error('练习成绩与作答不一致');
+    const previous = this.readAttempts();
+    const merged = mergeAttempts(previous, [attempt]);
+    if (merged.length === previous.length) return questions.filter((question, index) => answerLetter(answers[index]) !== question.answer).length;
+    const result = this.recordEntries(questions, answers, attempt.completedAt);
+    this.write(result.entries, merged); return result.added;
+  }
+
+  mergeAttempts(incoming) {
+    const previous = this.readData();
+    this.write(previous.entries, mergeAttempts(previous.attempts, incoming));
   }
 }
 

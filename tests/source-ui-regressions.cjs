@@ -31,7 +31,7 @@ async function contextWithBank(browser, questions) {
 
 async function entries(page) {
   return page.evaluate(async () => {
-    const { mistakeStore } = await import('/browser-store.js?v=3');
+    const { mistakeStore } = await import('/browser-store.js?v=5');
     await mistakeStore.ready;
     return mistakeStore.read();
   });
@@ -62,7 +62,7 @@ async function entries(page) {
 
     // This is the same merge operation used when a cloud response arrives after initialization.
     await page.evaluate(async entry => {
-      const { mistakeStore } = await import('/browser-store.js?v=3');
+      const { mistakeStore } = await import('/browser-store.js?v=5');
       await mistakeStore.merge([entry]);
       window.dispatchEvent(new Event('mbe:cloud-synced'));
     }, legacyEntry(samples[1], 3));
@@ -81,7 +81,7 @@ async function entries(page) {
       await mistakeStore.merge([entry]);
     }, legacyEntry(samples[2], 4));
     await page.waitForFunction(async id => {
-      const { mistakeStore } = await import('/browser-store.js?v=3');
+      const { mistakeStore } = await import('/browser-store.js?v=5');
       return Boolean(mistakeStore.read().find(entry => entry.question.id === id)?.question.source);
     }, samples[2].id);
     saved = await entries(page);

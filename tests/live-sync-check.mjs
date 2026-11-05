@@ -21,6 +21,7 @@ async function read(token) {
   assert.equal(response.status, 200, 'Authenticated sync must succeed');
   const result = await response.json();
   assert.ok(Array.isArray(result.entries));
+  if (result.attempts !== undefined) assert.ok(Array.isArray(result.attempts));
   assert.ok(Number.isSafeInteger(result.revision));
   return result;
 }
@@ -45,6 +46,7 @@ try {
   const second = await read(sessions[1]);
   const digest = entries => createHash('sha256').update(JSON.stringify(entries)).digest('hex');
   assert.equal(digest(second.entries), digest(first.entries), 'Both sessions must recover the same cloud notebook');
+  assert.equal(digest(second.attempts ?? []), digest(first.attempts ?? []), 'Both sessions must recover the same cumulative statistics');
   assert.equal(second.revision, first.revision);
   console.log('PASS production health, allowed-origin CORS, private login and consistent reads from two independent sessions');
 } finally {

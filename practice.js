@@ -3,15 +3,30 @@ import {
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
 } from './common.js?v=3';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
-import { downloadBackup } from './mistake-store.js?v=3';
-import { mistakeStore } from './browser-store.js?v=3';
-import './cloud-sync.js?v=4';
+import { downloadBackup } from './mistake-store.js?v=5';
+import { mistakeStore } from './browser-store.js?v=5';
+import './cloud-sync.js?v=5';
+import { accuracy, createAttempt, summarizeAttempts } from './progress.js?v=5';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
 let subject = SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : 'all';
 let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
+
+function cumulativeSummary() {
+  try {
+    const total = summarizeAttempts(mistakeStore.readAttempts());
+    return `<strong id="cumulative-rate">${accuracy(total.correct, total.total)}</strong>
+      <div>累计正确率<p class="note">累计答对 ${total.correct} / ${total.total} 题 · 已完成 ${total.sessions} 次练习</p>
+      <p class="note">按累计答对数 ÷ 累计总题数计算，重复练习和未作答均计入。${total.sessions ? '' : '统计从本功能启用后的首次交卷开始。'}</p></div>`;
+  } catch { return '<p class="notice error">累计统计暂时无法读取，请检查浏览器存储。</p>'; }
+}
+
+function updateCumulative() {
+  const target = document.getElementById('cumulative-summary');
+  if (target) target.innerHTML = cumulativeSummary();
+}
 
 function availableQuestions() {
   const questions = fromMistakes ? mistakeStore.read().map(entry => entry.question) : bank;
@@ -32,6 +47,7 @@ function home() {
     <p class="sub">按科目随机抽题，交卷后查看完整解析。<br>错题会自动收录到独立错题本。</p>
     ${fromMistakes ? '<p><a href="index.html" class="text-link">← 切换到完整题库</a></p>' : ''}
     ${storageError ? '<p class="notice error" role="alert">错题本无法读取，请检查浏览器存储权限。</p>' : ''}
+    <section class="card accuracy-summary" id="cumulative-summary" aria-label="累计统计">${cumulativeSummary()}</section>
     <section class="card setup">
       <label class="label" for="subject">选择科目</label>
       <select id="subject">${subjectOptions(subject, questions)}</select>
@@ -148,11 +164,12 @@ async function submitQuiz(automatic = false) {
   automatic = automatic || session.timer.expired;
   session.submitted = true;
   session.timer.stop();
+  session.attempt = createAttempt(session.questions, session.answers);
   clearInterval(ticker);
   let saved;
   unmountSourcePages(app);
   app.innerHTML = '<p class="sub" role="status">正在保存本次练习…</p>';
-  try { saved = await mistakeStore.record(session.questions, session.answers); }
+  try { saved = await mistakeStore.recordSession(session.questions, session.answers, session.attempt); }
   catch { saved = null; }
   results(automatic, saved);
 }
@@ -165,10 +182,11 @@ function results(automatic, saved) {
   app.innerHTML = `<div class="eyebrow">Practice complete</div>
     <div class="results-head"><div><h1>练习完成。</h1><p class="sub">${automatic ? '倒计时已结束，已自动交卷。' : '回顾每一道题，让理解更扎实。'}<br>
       ${mode === 'countdown' ? '倒计时' : '自然计时'} · 本次用时 ${formatTime(elapsed / 1000)}</p></div>
-      <div class="score">${score}<span class="score-total"> / ${questions.length}</span></div>
+      <div class="score"><span id="session-rate">${accuracy(score, questions.length)}</span><span class="score-caption">本次正确率 · ${score} / ${questions.length}</span></div>
     </div>
+    <section class="card accuracy-summary" id="cumulative-summary" aria-label="累计统计">${cumulativeSummary()}</section>
     <p class="notice ${saved === null ? 'error' : ''}" role="status">${saved === null
-      ? '错题保存失败，可能是浏览器存储被禁用、已满或现有数据异常。请保留本页，检查后点击重试。'
+      ? '错题和本次成绩保存失败，本次尚未计入累计。请保留本页，检查浏览器存储后点击重试。'
       : saved ? `${saved} 道错题已自动记录；重复错题已累计次数。` : '本次全部答对，没有新增错题。'}</p>
     ${saved === null ? '<button class="secondary" id="retry-save">重试保存错题</button>' : ''}
     ${saved === null ? '<button class="secondary" id="save-backup">下载本次错题备份</button>' : ''}
@@ -188,7 +206,7 @@ function results(automatic, saved) {
   document.getElementById('retry-save')?.addEventListener('click', async event => {
     event.target.disabled = true;
     let retried;
-    try { retried = await mistakeStore.record(questions, answers); }
+    try { retried = await mistakeStore.recordSession(questions, answers, session.attempt); }
     catch { retried = null; }
     results(automatic, retried);
   });
@@ -198,7 +216,7 @@ function results(automatic, saved) {
       question, lastAnswer: answerLetter(answers[index]), wrongCount: 1,
       firstWrongAt: timestamp, lastWrongAt: timestamp,
     }]);
-    downloadBackup(entries);
+    downloadBackup(entries, [session.attempt]);
   });
   mountSourcePages(app);
   window.scrollTo(0, 0);
@@ -209,8 +227,8 @@ window.addEventListener('beforeunload', event => {
   if (session && !session.submitted) { event.preventDefault(); event.returnValue = ''; }
 });
 
-window.addEventListener('mbe:cloud-synced', () => { if (!session) home(); });
-window.addEventListener('mbe:local-refreshed', () => { if (!session) home(); });
+window.addEventListener('mbe:cloud-synced', () => { if (!session) home(); else updateCumulative(); });
+window.addEventListener('mbe:local-refreshed', () => { if (!session) home(); else updateCumulative(); });
 loadBank().then(async questions => {
   await mistakeStore.ready;
   try { await mistakeStore.refreshQuestions(questions); } catch { /* Practice remains available if local storage cannot be updated. */ }

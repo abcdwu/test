@@ -57,10 +57,12 @@ def api(path, body=None, token=None, method="POST"):
         return json.load(response)
 
 
-assert api("/health", method="GET")["ok"]
+health = api("/health", method="GET")
+assert health["ok"] and "quiz-attempts" in health.get("features", [])
 session = api("/auth/login", {"password": password})
 try:
-    assert isinstance(api("/api/sync", {"entries": []}, session["token"])["entries"], list)
+    synced = api("/api/sync", {"entries": [], "attempts": []}, session["token"])
+    assert isinstance(synced["entries"], list) and isinstance(synced["attempts"], list)
 finally:
     api("/auth/session", token=session["token"], method="DELETE")
 
