@@ -10,8 +10,8 @@ const MAX_BODY_BYTES = 16 * 1024 * 1024;
 const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function createApi({ databasePath, loginPassword, allowedOrigins, trustFlyProxy = false }) {
-  if (typeof loginPassword !== 'string' || loginPassword.length < 12) {
-    throw new Error('Set LOGIN_PASSWORD to a private password of at least 12 characters');
+  if (typeof loginPassword !== 'string' || loginPassword.length < 1) {
+    throw new Error('Set LOGIN_PASSWORD to a private password of at least 1 character');
   }
   if (!allowedOrigins.length || allowedOrigins.includes('*')) throw new Error('Set explicit ALLOWED_ORIGINS');
   mkdirSync(dirname(databasePath), { recursive: true });

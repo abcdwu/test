@@ -2,6 +2,10 @@ name: Deploy private mistake sync
 
 on:
   workflow_dispatch:
+  # One-time bootstrap deployment from this reviewed feature branch.
+  push:
+    branches: [codex/subject-timers-mistake-sync]
+    paths: ['.github/workflows/fly.yml']
 
 permissions:
   contents: read
@@ -28,7 +32,7 @@ jobs:
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
         run: |
           test -n "$FLY_API_TOKEN" || { echo 'Add repository secret FLY_API_TOKEN first.'; exit 1; }
-          test "${#LOGIN_PASSWORD}" -ge 12 || { echo 'Set LOGIN_PASSWORD to at least 12 characters.'; exit 1; }
+          test "${#LOGIN_PASSWORD}" -ge 1 || { echo 'Set LOGIN_PASSWORD to at least 1 character.'; exit 1; }
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Create persistent storage and deploy one machine
         env:

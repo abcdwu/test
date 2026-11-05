@@ -52,7 +52,7 @@ fly tokens create deploy --app abcdwu-mbe-mistakes --name github-deploy --expiry
 在 GitHub 仓库 **Settings → Secrets and variables → Actions → New repository secret** 添加：
 
 - `FLY_API_TOKEN`：上一步生成的完整部署令牌。
-- `LOGIN_PASSWORD`：自行选择的网站私人密码，至少 12 个字符。
+- `LOGIN_PASSWORD`：自行选择的网站私人密码，至少 1 个字符。
 
 不要把令牌或密码写进代码、Issue、PR 或聊天。短期令牌到期不影响已部署的网站，只影响下次部署。
 
@@ -74,7 +74,7 @@ fly volumes create mistake_data --app abcdwu-mbe-mistakes --region nrt --size 1 
 通过标准输入安全设置密码，避免把它放入仓库、命令历史或聊天：
 
 ```sh
-read -r -s -p '设置私人密码（至少12个字符）: ' mbe_password
+read -r -s -p '设置私人密码（至少1个字符）: ' mbe_password
 printf '\n'
 printf 'LOGIN_PASSWORD=%s\n' "$mbe_password" | fly secrets import --app abcdwu-mbe-mistakes
 unset mbe_password

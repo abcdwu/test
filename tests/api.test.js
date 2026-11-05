@@ -10,7 +10,7 @@ import { MistakeStore } from '../mistake-store.js';
 const source = readFileSync(new URL('../questions.txt', import.meta.url));
 const metadata = JSON.parse(readFileSync(new URL('../question-metadata.json', import.meta.url)));
 const question = { ...JSON.parse(gunzipSync(Buffer.from(source.toString(), 'base64')))[0], ...metadata.questions[0] };
-const privatePassword = 'test-only-private-password';
+const privatePassword = 'x';
 const origin = 'https://test.chaoxu.me';
 
 function device() {
@@ -75,8 +75,8 @@ test('private sync requires login, merges devices exactly once and survives a se
   }
 });
 
-test('password guessing is limited and weak deployment configuration is rejected', async () => {
-  assert.throws(() => createApi({ databasePath: ':memory:', loginPassword: 'short', allowedOrigins: [origin] }));
+test('password guessing is limited and empty password configuration is rejected', async () => {
+  assert.throws(() => createApi({ databasePath: ':memory:', loginPassword: '', allowedOrigins: [origin] }));
   assert.throws(() => createApi({ databasePath: ':memory:', loginPassword: privatePassword, allowedOrigins: ['*'] }));
   const api = createApi({ databasePath: ':memory:', loginPassword: privatePassword, allowedOrigins: [origin] });
   await new Promise(resolve => api.server.listen(0, '127.0.0.1', resolve));

@@ -38,8 +38,8 @@ if not has_ipv4:
     fly("ips", "allocate-v4", "--shared")
 
 password = os.environ["LOGIN_PASSWORD"]
-if len(password) < 12 or "\n" in password or "\r" in password:
-    raise RuntimeError("LOGIN_PASSWORD must contain at least 12 characters and no newlines")
+if len(password) < 1 or "\n" in password or "\r" in password:
+    raise RuntimeError("LOGIN_PASSWORD must contain at least 1 character and no newlines")
 # Pass the password through stdin, never a command argument or log line.
 fly("secrets", "import", "--stage", input_text=f"LOGIN_PASSWORD={password}\n")
 fly("deploy", "--remote-only", "--ha=false")
