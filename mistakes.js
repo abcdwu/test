@@ -1,4 +1,4 @@
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=3';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=6';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';

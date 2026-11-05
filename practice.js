@@ -1,7 +1,7 @@
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, QuizTimer,
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
-} from './common.js?v=3';
+} from './common.js?v=6';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';
@@ -13,6 +13,7 @@ const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
 let subject = SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : 'all';
 let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
+let bankLoading = false;
 
 function cumulativeSummary() {
   try {
@@ -227,13 +228,22 @@ window.addEventListener('beforeunload', event => {
   if (session && !session.submitted) { event.preventDefault(); event.returnValue = ''; }
 });
 
-window.addEventListener('mbe:cloud-synced', () => { if (!session) home(); else updateCumulative(); });
-window.addEventListener('mbe:local-refreshed', () => { if (!session) home(); else updateCumulative(); });
-loadBank().then(async questions => {
-  await mistakeStore.ready;
-  try { await mistakeStore.refreshQuestions(questions); } catch { /* Practice remains available if local storage cannot be updated. */ }
-  bank = questions;
-  home();
-}).catch(error => {
-  app.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '题库载入失败，请刷新页面重试。')}</p>`;
-});
+window.addEventListener('mbe:cloud-synced', () => { if (!bank.length) return; if (!session) home(); else updateCumulative(); });
+window.addEventListener('mbe:local-refreshed', () => { if (!bank.length) return; if (!session) home(); else updateCumulative(); });
+async function loadPracticeBank() {
+  if (bankLoading) return;
+  bankLoading = true;
+  app.innerHTML = '<p class="sub" role="status">正在载入题库…网络较慢时会自动重试，请稍候。</p>';
+  try {
+    const questions = await loadBank();
+    await mistakeStore.ready;
+    try { await mistakeStore.refreshQuestions(questions); } catch { /* Practice remains available if local storage cannot be updated. */ }
+    bank = questions;
+    home();
+  } catch (error) {
+    app.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '题库载入失败，请检查网络后重试。')}</p><button class="primary" id="retry-bank">重新载入题库</button>`;
+    document.getElementById('retry-bank').addEventListener('click', loadPracticeBank);
+  } finally { bankLoading = false; }
+}
+window.addEventListener('online', () => { if (!bank.length) loadPracticeBank(); });
+loadPracticeBank();

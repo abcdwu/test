@@ -58,20 +58,47 @@ export class QuizTimer {
   stop() { if (this.stoppedAt === null) this.stoppedAt = this.now(); }
 }
 
+async function bankResource(path, json, cache) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise(resolve => setTimeout(resolve, attempt * 400));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    try {
+      const response = await fetch(path, { signal: controller.signal, cache: attempt ? 'reload' : cache });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      // The body can fail after headers arrive on an unstable mobile connection.
+      return await (json ? response.json() : response.text());
+    } catch (error) {
+      if (attempt === 2) throw new Error('题库文件未能下载完成，请检查网络后点击重试。', { cause: error });
+    } finally { clearTimeout(timeout); }
+  }
+}
+
 export async function loadBank() {
-  const [sourceResponse, metadataResponse] = await Promise.all([
-    fetch('questions.txt?v=3'), fetch('question-metadata.json?v=3'),
-  ]);
-  if (!sourceResponse.ok || !metadataResponse.ok) throw new Error('题库载入失败，请刷新页面重试。');
-  const [source, metadata] = await Promise.all([sourceResponse.text(), metadataResponse.json()]);
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
-  const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-  if (hash !== metadata.bankSha256) throw new Error('题库与科目数据版本不一致，请刷新页面重试。');
-  const bytes = Uint8Array.from(atob(source), character => character.charCodeAt(0));
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-  const questions = JSON.parse(await new Response(stream).text());
-  if (questions.length !== metadata.questions.length) throw new Error('科目数据不完整。');
-  return questions.map((question, index) => ({ ...question, ...metadata.questions[index] }));
+  for (let refresh = 0; refresh < 2; refresh++) {
+    const cache = refresh ? 'reload' : 'default';
+    const resources = await Promise.allSettled([
+      bankResource('questions.txt?v=3', false, cache), bankResource('question-metadata.json?v=3', true, cache),
+    ]);
+    const failure = resources.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+    const [source, metadata] = resources.map(result => result.value);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+    const hash = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    if (hash !== metadata.bankSha256) {
+      if (!refresh) continue;
+      throw new Error('题库与科目数据版本不一致，请稍后重试。');
+    }
+    if (typeof DecompressionStream !== 'function') throw new Error('浏览器暂不支持题库解压，请更新系统或使用新版浏览器。');
+    let questions;
+    try {
+      const bytes = Uint8Array.from(atob(source), character => character.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      questions = JSON.parse(await new Response(stream).text());
+    } catch (error) { throw new Error('题库解析未完成，请点击重试。', { cause: error }); }
+    if (!Array.isArray(questions) || !Array.isArray(metadata.questions) || questions.length !== metadata.questions.length) throw new Error('科目数据不完整。');
+    return questions.map((question, index) => ({ ...question, ...metadata.questions[index] }));
+  }
 }
 
 function sourcePages(question, kind) {
