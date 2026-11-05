@@ -9,6 +9,7 @@ on:
       - progress.js
       - mistake-store.js
       - Dockerfile
+      - .dockerignore
       - .github/workflows/fly.yml
 
 permissions:
