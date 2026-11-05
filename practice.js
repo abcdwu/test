@@ -5,7 +5,7 @@ import {
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup } from './mistake-store.js?v=3';
 import { mistakeStore } from './browser-store.js?v=3';
-import './cloud-sync.js?v=3';
+import './cloud-sync.js?v=4';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);

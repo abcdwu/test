@@ -2,7 +2,7 @@ import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions }
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=3';
 import { mistakeStore } from './browser-store.js?v=3';
-import './cloud-sync.js?v=3';
+import './cloud-sync.js?v=4';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');
