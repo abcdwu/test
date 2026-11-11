@@ -94,7 +94,7 @@ export function questionSource(question) {
 }
 
 export function reviewQuestion(question, selected) {
-  return `<p class="question">${esc(question.stem)}</p>
+  return `<p class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</p>
     <div class="result-options">${question.choices.map((choice, index) => {
       const letter = 'ABCD'[index];
       return `<div class="ro ${letter === question.answer ? 'correct' : selected === letter ? 'wrong' : ''}">

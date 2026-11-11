@@ -1,7 +1,8 @@
+import { mountHighlights } from './highlights.js?v=1';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
-} from './common.js?v=7';
+} from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';
@@ -158,7 +159,7 @@ function render() {
     <div class="eyebrow">Question ${String(index + 1).padStart(2, '0')}</div>
     <p class="subject-tag">${esc(subjectLabel(question.subject))}</p>
     <h2>选择最佳答案</h2>
-    <section class="card"><div class="question">${esc(question.stem)}</div>
+    <section class="card"><div class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</div>
       <div class="options">${question.choices.map((choice, number) => `
         <button class="option ${answers[index] === number ? 'selected' : ''}" data-choice="${number}" aria-pressed="${answers[index] === number}">
           <span class="letter">${'ABCD'[number]}</span><span>${esc(choice)}</span>
@@ -190,6 +191,7 @@ function render() {
     });
   }
   document.getElementById('submit')?.addEventListener('click', () => submitQuiz());
+  mountHighlights(app);
   mountSourcePages(app);
 }
 
@@ -257,6 +259,7 @@ function results(automatic, saved) {
     }]);
     downloadBackup(entries, [session.attempt]);
   });
+  mountHighlights(app);
   mountSourcePages(app);
   window.scrollTo(0, 0);
 }
