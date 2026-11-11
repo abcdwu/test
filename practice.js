@@ -95,6 +95,10 @@ async function loadInlineHistory(target) {
     if (!target.isConnected) return;
     target.innerHTML = questions.map((question, index) => {
       const record = attempt.details.questions[index];
+      const source = question.source;
+      const pages = Array.isArray(source?.questionPages) ? source.questionPages.filter(page => Number.isInteger(page) && page > 0) : [];
+      const original = /^sources\/[a-z0-9-]+\.pdf$/.test(source?.pdfPath) && pages.length
+        ? `<p class="history-source"><a class="text-link" href="${esc(source.pdfPath)}#page=${pages[0]}" target="_blank" rel="noopener">题目原始 PDF · 第 ${pages.join('、')} 页（含图表） ↗</a></p>` : '';
       return `<article class="history-question" data-saved-question-id="${esc(question.id)}">
         <div class="history-question-label">第 ${index + 1} 题 · ${esc(subjectLabel(question.subject))}</div>
         <p class="history-stem">${esc(question.stem)}</p>
@@ -103,6 +107,7 @@ async function loadInlineHistory(target) {
           return `<li class="${letter === question.answer ? 'correct' : letter === record.selected ? 'wrong' : ''}"><span>${letter}.</span><span>${esc(choice)}</span></li>`;
         }).join('')}</ol>
         <p class="history-answer">当时作答：${record.selected ?? '未作答'} · 正确答案：${question.answer} · ${record.correct ? '回答正确' : '回答错误'}</p>
+        ${original}
       </article>`;
     }).join('');
     target.dataset.loaded = 'true';
