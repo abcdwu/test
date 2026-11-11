@@ -38,6 +38,12 @@ async function finish(page, total, bad = []) {
     const first = records[0]; assert.ok(first.details.durationSeconds >= 123); assert.equal(first.total, 5);
     assert.equal(await page.locator('.wrong-numbers').first().textContent(), '2、5');
     const before = JSON.stringify(records);
+    const inline = page.locator(`[data-inline-attempt="${first.id}"]`);
+    await inline.locator('.history-question').nth(4).waitFor();
+    assert.deepEqual(await inline.locator('.history-question').evaluateAll(nodes => nodes.map(node => node.dataset.savedQuestionId)), firstIds);
+    assert.deepEqual(await inline.locator('.history-stem').allTextContents(), firstIds.map(id => bank.find(q => q.id === id).stem));
+    assert.equal(await inline.locator('.history-choices li').count(), 20);
+    assert.equal(JSON.stringify(await attempts(page)), before, 'showing full question content is read-only');
     for (let i = 0; i < 2; i++) {
       await page.locator(`[data-attempt-review="${first.id}"]`).click();
       await page.getByRole('heading', { name: '历史练习。' }).waitFor();
@@ -77,8 +83,29 @@ async function finish(page, total, bad = []) {
     assert.equal(mixedIds.filter(id => bank.find(q => q.id === id).subject === 'contracts').length, 3);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.locator('#history-panel').scrollIntoViewIfNeeded(); await page.screenshot({ path: '/tmp/mbe-history-mobile.png' });
+
+    // A fresh browser fetches no question bank while the history is closed.
+    const fresh = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await routeBank(fresh, bank); await fresh.route('**/cloud-config.json*', r => r.fulfill({ json: {} }));
+    const restored = await fresh.newPage(); let downloads = 0;
+    restored.on('request', request => { if (/\/bank\/.+\.gz/.test(request.url())) downloads++; });
+    await restored.goto(origin + '/?subject=torts'); await restored.locator('#start').waitFor();
+    await restored.evaluate(async record => {
+      const { mistakeStore } = await import('/browser-store.js?v=9'); await mistakeStore.mergeAttempts([record]);
+      window.dispatchEvent(new Event('mbe:cloud-synced'));
+    }, first);
+    assert.equal(downloads, 0);
+    await restored.locator('#history-panel > details > summary').click();
+    await restored.locator('.history-question').nth(4).waitFor();
+    assert.equal(downloads, 1, 'only the required subject is downloaded, once');
+    assert.deepEqual(await restored.locator('.history-stem').allTextContents(), firstIds.map(id => bank.find(q => q.id === id).stem));
+    assert.equal(await restored.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assert.deepEqual(await attempts(restored), [first]);
+    await restored.locator('#history-panel').scrollIntoViewIfNeeded();
+    await restored.screenshot({ path: '/tmp/mbe-inline-history-mobile.png' });
+    await fresh.close();
     assert.deepEqual(errors, []);
-    console.log('PASS history time/count/wrong numbers, repeated read-only review with original answers/order, 12 unique questions over 5+5+2 sessions, reload, countdown, round rollover, exit and mixed-subject progress on mobile');
+    console.log('PASS inline full stems/options in original order, lazy subject loading, read-only history, repeated review, 5+5+2 unique questions, reload, countdown, rollover and mobile layout');
     await context.close();
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
