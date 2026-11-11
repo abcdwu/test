@@ -1,4 +1,5 @@
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=7';
+import { mountHighlights } from './highlights.js?v=1';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=5';
 import { mistakeStore } from './browser-store.js?v=5';
@@ -68,6 +69,7 @@ function render() {
     }
     render();
   });
+  mountHighlights(app);
   mountSourcePages(app);
 }
 

@@ -22,6 +22,8 @@ for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.
       const page = (await get(base, '')).toString();
       assert.ok(page.includes(entry), 'Latest entry module must be published');
       assert.equal(digest(await get(base, entry)), digest(entryBytes), 'Latest entry contents must be published');
+      const highlightEntry = /from '\.\/(highlights\.js\?v=\d+)'/.exec(entryBytes.toString())[1];
+      assert.equal(digest(await get(base, highlightEntry)), digest(readFileSync(new URL('../highlights.js', import.meta.url))), 'Highlight controls must be published');
       const catalog = JSON.parse((await get(base, 'bank/manifest.json')).toString());
       assert.equal(JSON.stringify(catalog), JSON.stringify(manifest));
       const subject = catalog.subjects.torts;

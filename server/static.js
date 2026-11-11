@@ -3,7 +3,7 @@ import { extname, resolve, sep } from 'node:path';
 
 const roots = new Set(['index.html', 'mistakes.html', 'styles.css', 'common.js', 'bank-loader.js',
   'practice.js', 'mistakes.js', 'browser-store.js', 'mistake-store.js', 'progress.js',
-  'cloud-sync.js', 'pdf-source.js', 'cloud-config.json']);
+  'cloud-sync.js', 'highlights.js', 'pdf-source.js', 'cloud-config.json']);
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.pdf': 'application/pdf', '.gz': 'application/gzip',

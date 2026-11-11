@@ -142,3 +142,7 @@ SQLite 数据库位于持久化磁盘 `/data/mistakes.sqlite`。`fly.toml` 请�
 `questions.txt`、`question-metadata.json` 由 `npm run build:bank` 一起生成，使用 SHA-256 检查版本一致性。原文件及摘要见 `sources/manifest.json`，完整页面归属见 `audit/source-coverage.json`。生成器不再按题干前缀去重，也不静默跳过无法解析的题目。全部 **1,635 个旧 ID 保持不变**，题目重排和补题后仍对应既有错题记录。
 
 前端需要 HTTPS 或 localhost，以及支持 IndexedDB、DecompressionStream、Web Crypto 的现代浏览器。
+
+## 题干高亮
+
+在练习、交卷回顾或错题本中，选中题干文字（手机长按并拖动选择范围），点击“高亮选中”。可选中一部分文字后点击“取消选中高亮”，或使用“清除本题高亮”。黄色标记按题目保存在当前浏览器，翻题、刷新后保留；不参与错题云同步及 JSON 备份。题干内容更新时旧标记不会错误套用。浏览器拒绝保存或空间不足时会提示。

@@ -11,6 +11,8 @@ test('the backup serves the public app and bank with PDF ranges, but never priva
   try {
     const app = await fetch(base + '/'); assert.equal(app.status, 200); assert.match(app.headers.get('content-type'), /text\/html/);
     assert.equal(app.headers.get('cache-control'), 'no-cache');
+    const highlights = await fetch(base + '/highlights.js');
+    assert.equal(highlights.status, 200); assert.match(await highlights.text(), /mountHighlights/);
     const manifestResponse = await fetch(base + '/bank/manifest.json', { headers: { Origin: 'https://test.chaoxu.me' } });
     assert.equal(manifestResponse.headers.get('access-control-allow-origin'), 'https://test.chaoxu.me');
     const manifest = await manifestResponse.json(); assert.equal(manifest.total, 1803);
