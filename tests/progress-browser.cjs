@@ -8,7 +8,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const origin = process.env.MBE_TEST_ORIGIN || 'http://127.0.0.1:8080';
 const bank = JSON.parse(zlib.gunzipSync(Buffer.from(fs.readFileSync(path.join(root, 'questions.txt'), 'utf8'), 'base64')))
-  .slice(0, 20).map(({ source, answerEvidence, ...question }) => question);
+  .slice(0, 80).map(({ source, answerEvidence, ...question }) => question);
 const source = zlib.gzipSync(JSON.stringify(bank)).toString('base64');
 const metadata = { bankSha256: crypto.createHash('sha256').update(source).digest('hex'),
   questions: bank.map(({ id, subject }) => ({ id, subject })) };
@@ -68,7 +68,7 @@ async function login(page) {
     const upgraded = await legacyContext.newPage(); await home(upgraded);
     assert.equal(await oldTab.evaluate(() => window.legacyClosed), true);
     const legacy = await upgraded.evaluate(async () => {
-      const { mistakeStore } = await import('/browser-store.js?v=5');
+      const { mistakeStore } = await import('/browser-store.js?v=9');
       await mistakeStore.ready;
       return { entries: mistakeStore.read(), attempts: mistakeStore.readAttempts() };
     });
@@ -112,9 +112,16 @@ async function login(page) {
     await first.getByText(/错题已自动同步/).waitFor();
     await second.evaluate(() => dispatchEvent(new Event('online')));
     await second.waitForFunction(() => document.querySelector('#cumulative-rate')?.textContent === '57.5%');
-    await second.evaluate(async () => { const { sync } = await import('/cloud-sync.js?v=5'); await sync(); await sync(); });
+    await second.evaluate(async () => { const { sync } = await import('/cloud-sync.js?v=9'); await sync(); await sync(); });
     assert.match(await second.locator('#cumulative-summary').textContent(), /累计答对 23 \/ 40 题/);
     assert.match(await second.locator('#cumulative-summary').textContent(), /已完成 4 次练习/);
+    const history = await second.evaluate(async () => {
+      const { mistakeStore } = await import('/browser-store.js?v=9'); return mistakeStore.readAttempts();
+    });
+    assert.ok(history.every(record => record.details && record.details.questions.length === record.total));
+    const ids = history.flatMap(record => record.details.questions.map(question => question.id));
+    assert.equal(ids.length, 40); assert.equal(new Set(ids).size, 40, 'two devices share round exclusions after sync');
+    assert.ok(history.every(record => record.details.questions.every(question => question.round === 1)));
     console.log('PASS two-device accumulation, perfect-session sync, offline catch-up and repeated sync without inflation');
     assert.deepEqual(errors, []); console.log('PASS no browser errors');
   } finally {

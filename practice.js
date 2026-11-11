@@ -4,16 +4,19 @@ import {
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
 } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
-import { downloadBackup } from './mistake-store.js?v=5';
-import { mistakeStore } from './browser-store.js?v=5';
-import './cloud-sync.js?v=5';
-import { accuracy, createAttempt, summarizeAttempts } from './progress.js?v=5';
+import { downloadBackup } from './mistake-store.js?v=9';
+import { mistakeStore } from './browser-store.js?v=9';
+import './cloud-sync.js?v=9';
+import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=9';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
 let subject = params.get('subject') === 'all' || SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : null;
 let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
+let historyLimit = 20;
+let reviewing = false;
+const practiceSource = fromMistakes ? 'mistakes' : 'bank';
 let bankLoading = false, catalog = null, storeReady = false, preparing = false, startToken = 0;
 const knownQuestions = new Map();
 const backupLink = '<a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/">使用备用入口 →</a>';
@@ -33,12 +36,65 @@ function updateCumulative() {
   if (target) target.innerHTML = cumulativeSummary();
 }
 
+function historySection(open = false) {
+  let content = '<p class="sub">正在读取记录…</p>';
+  try { if (storeReady) content = historyMarkup(mistakeStore.readAttempts(), historyLimit); }
+  catch { content = '<p class="notice error">练习记录暂时无法读取，请检查浏览器存储。</p>'; }
+  return `<section id="history-panel" class="card history-panel"><details ${open ? 'open' : ''}><summary>练习记录</summary>${content}</details></section>`;
+}
+function mountHistory() {
+  app.querySelectorAll('[data-attempt-review]').forEach(button => button.addEventListener('click', () => showHistoryAttempt(button.dataset.attemptReview)));
+  document.getElementById('history-more')?.addEventListener('click', () => {
+    historyLimit += 20;
+    const panel = document.getElementById('history-panel');
+    panel.outerHTML = historySection(true); mountHistory();
+  });
+}
+
+async function showHistoryAttempt(id) {
+  const token = ++startToken;
+  reviewing = true; preparing = false;
+  clearInterval(ticker); session = null;
+  unmountSourcePages(app);
+  const back = '<button type="button" class="secondary" id="history-back">← 返回练习首页</button>';
+  app.innerHTML = `${back}<p class="sub" role="status">正在恢复这次练习的题目…</p>`;
+  document.getElementById('history-back').addEventListener('click', home);
+  try {
+    const attempt = mistakeStore.readAttempts().find(item => item.id === id);
+    if (!attempt?.details) throw new Error('这条旧记录未保存题目明细，无法恢复。');
+    for (const key of new Set(attempt.details.questions.map(question => question.subject))) {
+      for (const question of await loadBank(key)) knownQuestions.set(question.id, question);
+      if (token !== startToken) return;
+    }
+    const questions = attempt.details.questions.map(record => knownQuestions.get(record.id));
+    if (questions.some(question => !question)) throw new Error('部分题目暂时无法恢复，请稍后重试。');
+    const wrong = attempt.details.questions.filter(record => !record.correct).map(record => record.number).join('、') || '—';
+    app.innerHTML = `${back}<div class="eyebrow spaced">Practice history</div><h1>历史练习。</h1>
+      <p class="sub">${esc(new Date(attempt.completedAt).toLocaleString('zh-CN', { hour12: false }))}<br>
+        ${attempt.total} 题 · 用时 ${formatTime(attempt.details.durationSeconds)} · 正确率 ${accuracy(attempt.correct, attempt.total)}</p>
+      <p class="notice">错题题号：${wrong}<br>可以反复回看，不会再次计分，也不消耗本轮题目。</p>
+      ${questions.map((question, index) => {
+        const record = attempt.details.questions[index];
+        return `<section class="card result"><div class="result-title">第 ${index + 1} 题 <span class="result-state">${record.correct ? '回答正确' : record.selected === null ? '未作答' : '回答错误'}</span></div>
+          <p class="subject-tag">${esc(subjectLabel(question.subject))}</p>${reviewQuestion(question, record.selected)}</section>`;
+      }).join('')}`;
+    document.getElementById('history-back').addEventListener('click', home);
+    mountHighlights(app); mountSourcePages(app); window.scrollTo(0, 0);
+  } catch (error) {
+    if (token !== startToken) return;
+    app.innerHTML = `${back}<p class="notice error" role="alert">${esc(error.message || '暂时无法恢复题目，请重试。')}</p><button type="button" class="primary" id="history-retry">重试打开记录</button>`;
+    document.getElementById('history-back').addEventListener('click', home);
+    document.getElementById('history-retry').addEventListener('click', () => showHistoryAttempt(id));
+  }
+}
+
 function availableQuestions() {
   const questions = fromMistakes ? mistakeStore.read().map(entry => entry.question) : bank;
   return filterSubject(questions, subject);
 }
 
 function home() {
+  reviewing = false;
   startToken++; preparing = false;
   unmountSourcePages(app);
   clearInterval(ticker);
@@ -46,20 +102,32 @@ function home() {
   let questions = [], storageError = false;
   try { questions = fromMistakes ? mistakeStore.read().map(entry => entry.question) : bank; }
   catch { storageError = true; }
+  let attempts = [];
+  try { if (storeReady) attempts = mistakeStore.readAttempts(); } catch { storageError = true; }
   const counts = !fromMistakes && catalog ? Object.fromEntries(Object.entries(catalog.subjects).map(([key, item]) => [key, item.count])) : null;
   if (subject === null) subject = fromMistakes ? 'all' : SUBJECTS.find(item => counts?.[item.id] > 0)?.id || 'all';
   const available = counts ? (subject === 'all' ? catalog.total : counts[subject]) : filterSubject(questions, subject).length;
-  const actualCount = Math.min(count, available);
+  const selectedCounts = counts ? Object.fromEntries(Object.entries(counts).filter(([key]) => subject === 'all' || key === subject))
+    : Object.fromEntries(SUBJECTS.filter(item => subject === 'all' || item.id === subject).map(item => [item.id, questions.filter(question => question.subject === item.id).length]));
+  const progress = roundProgress(attempts, selectedCounts, practiceSource);
+  const nextRound = available > 0 && progress.remaining === 0;
+  const remaining = nextRound ? available : progress.remaining;
+  const actualCount = Math.min(count, remaining);
+  const round = subject === 'all' ? null : progress.bySubject[subject]?.round || 1;
+  const roundMessage = nextRound ? `本轮 ${available} 题已完成，下次练习开始${round ? `第 ${round + 1} 轮` : '各科新一轮'}。`
+    : `${round ? `第 ${round} 轮 · ` : '各科本轮合计 · '}已做 ${progress.completed} / ${available} 题，剩余 ${progress.remaining} 题。`;
   app.innerHTML = `<div class="eyebrow">${fromMistakes ? 'Review & grow' : 'A little progress, every day'}</div>
     <h1>${fromMistakes ? '重温错题，<br>巩固理解。' : '专注练习，<br>从容备考。'}</h1>
     <p class="sub">按科目随机抽题，交卷后查看完整解析。<br>错题会自动收录到独立错题本。</p>
     ${fromMistakes ? '<p><a href="index.html" class="text-link">← 切换到完整题库</a></p>' : ''}
     ${storageError ? '<p class="notice error" role="alert">错题本无法读取，请检查浏览器存储权限。</p>' : ''}
     <section class="card accuracy-summary" id="cumulative-summary" aria-label="累计统计">${cumulativeSummary()}</section>
+    ${storageError ? '' : historySection()}
     <section class="card setup">
       <label class="label" for="subject">选择科目</label>
       <select id="subject">${subjectOptions(subject, questions, counts)}</select>
       ${!fromMistakes ? '<p class="note">按科目练习准备更快；混合练习首次需准备全部科目。</p>' : ''}
+      <p class="notice round-progress" id="round-progress">${roundMessage}</p>
       <div class="label spaced" id="count-label">这次想做多少题？</div>
       <div class="counts" role="group" aria-labelledby="count-label">${[5, 10, 15, 20].map(number => `
         <button class="count ${number === count ? 'active' : ''}" data-count="${number}" aria-pressed="${number === count}">${number} 题</button>`).join('')}</div>
@@ -71,9 +139,10 @@ function home() {
       <p class="sub timing-hint">${mode === 'countdown'
         ? `${actualCount} 题 × 1.8 分钟 = ${formatTime(actualCount * 108)}，时间到自动交卷。`
         : '记录本次练习的用时，没有时间限制。'}</p>
-      ${available && available < count ? `<p class="notice">当前有 ${available} 道题，本次将练习全部 ${available} 题。</p>` : ''}
-      <button class="primary" id="start" ${!available ? 'disabled' : ''}>开始${fromMistakes ? '错题' : ''}练习　→</button>
+      ${remaining && remaining < count ? `<p class="notice">本轮剩余 ${remaining} 道题，本次将练习这 ${remaining} 题，不混入下一轮。</p>` : ''}
+      <button class="primary" id="start" ${!available || !storeReady || storageError ? 'disabled' : ''}>${nextRound ? '开始下一轮' : '开始'}${fromMistakes ? '错题' : ''}练习　→</button>
       <p class="notice error" id="bank-status" role="alert" hidden></p>
+      <p class="note">交卷后记录已做题，本轮内不重复；未交卷退出不消耗题目。</p>
       <p class="note">${available ? `随机抽题 · 当前科目共 ${available} 道题` : fromMistakes ? '当前科目暂无错题，完成练习后会自动收录。' : '当前科目暂无题目。'}</p>
     </section>
     <p class="foot">八科分开练习：民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法、侵权法。<br>错题在本机自动保存；登录云同步后可跨设备查看。清理浏览器前请确认同步完成。</p>`;
@@ -83,6 +152,7 @@ function home() {
     count = Number(button.dataset.count); home();
   }));
   document.getElementById('start').addEventListener('click', start);
+  mountHistory();
 }
 
 async function start() {
@@ -90,8 +160,10 @@ async function start() {
   const selectedSubject = subject;
   const button = document.getElementById('start');
   preparing = true; button.disabled = true; button.textContent = '正在准备本次题目…';
-  let questions;
+  let questions, roundSelection;
   try {
+    await mistakeStore.ready;
+    if (token !== startToken) return;
     if (!fromMistakes) {
       const downloaded = await loadBank(selectedSubject);
       if (token !== startToken) return;
@@ -109,7 +181,8 @@ async function start() {
       }
     }
     if (token !== startToken) return;
-    questions = shuffle(availableQuestions()).slice(0, count);
+    roundSelection = remainingPool(availableQuestions(), mistakeStore.readAttempts(), practiceSource);
+    questions = shuffle(roundSelection.questions).slice(0, count);
   } catch (error) {
     if (token === startToken) {
       const status = document.getElementById('bank-status');
@@ -122,7 +195,7 @@ async function start() {
   if (!questions.length) { home(); return; }
   clearInterval(ticker);
   session = {
-    questions, answers: Array(questions.length).fill(null), index: 0,
+    questions, rounds: roundSelection.rounds, answers: Array(questions.length).fill(null), index: 0,
     timer: new QuizTimer(mode, questions.length), submitted: false,
   };
   render();
@@ -205,7 +278,11 @@ async function submitQuiz(automatic = false) {
   automatic = automatic || session.timer.expired;
   session.submitted = true;
   session.timer.stop();
-  session.attempt = createAttempt(session.questions, session.answers);
+  const elapsed = automatic ? session.timer.limitMs : session.timer.elapsedMs;
+  session.attempt = createAttempt(session.questions, session.answers, crypto.randomUUID(), new Date().toISOString(), {
+    startedAt: new Date(session.timer.startedAt).toISOString(), durationSeconds: Math.floor(elapsed / 1000),
+    source: practiceSource, rounds: session.rounds, timerMode: mode,
+  });
   clearInterval(ticker);
   let saved;
   unmountSourcePages(app);
@@ -231,6 +308,7 @@ function results(automatic, saved) {
       : saved ? `${saved} 道错题已自动记录；重复错题已累计次数。` : '本次全部答对，没有新增错题。'}</p>
     ${saved === null ? '<button class="secondary" id="retry-save">重试保存错题</button>' : ''}
     ${saved === null ? '<button class="secondary" id="save-backup">下载本次错题备份</button>' : ''}
+    ${historySection(true)}
     <p><a class="text-link" href="mistakes.html">打开独立错题本 →</a></p>
     ${questions.map((question, index) => {
       const selected = answerLetter(answers[index]);
@@ -259,6 +337,7 @@ function results(automatic, saved) {
     }]);
     downloadBackup(entries, [session.attempt]);
   });
+  mountHistory();
   mountHighlights(app);
   mountSourcePages(app);
   window.scrollTo(0, 0);
@@ -269,10 +348,10 @@ window.addEventListener('beforeunload', event => {
   if (session && !session.submitted) { event.preventDefault(); event.returnValue = ''; }
 });
 
-function dataChanged() { if (session || preparing) updateCumulative(); else if (catalog || fromMistakes && storeReady) home(); }
+function dataChanged() { if (reviewing) return; if (session || preparing) updateCumulative(); else if (catalog || fromMistakes && storeReady) home(); }
 window.addEventListener('mbe:cloud-synced', dataChanged);
 window.addEventListener('mbe:local-refreshed', dataChanged);
-mistakeStore.ready.then(() => { storeReady = true; updateCumulative(); });
+mistakeStore.ready.then(() => { storeReady = true; if (catalog || fromMistakes) { if (session || preparing) updateCumulative(); else home(); } });
 async function loadPracticeBank() {
   if (bankLoading) return;
   bankLoading = true;

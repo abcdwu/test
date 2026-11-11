@@ -1,9 +1,9 @@
 import { mountHighlights } from './highlights.js?v=1';
 import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
-import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=5';
-import { mistakeStore } from './browser-store.js?v=5';
-import './cloud-sync.js?v=5';
+import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=9';
+import { mistakeStore } from './browser-store.js?v=9';
+import './cloud-sync.js?v=9';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');

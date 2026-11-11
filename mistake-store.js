@@ -1,5 +1,5 @@
 import { answerLetter, SUBJECTS } from './common.js?v=3';
-import { createAttempt, mergeAttempts, sameAttempt, validateAttempts } from './progress.js?v=5';
+import { createAttempt, mergeAttempts, sameAttempt, validateAttempts } from './progress.js?v=9';
 
 export const STORAGE_KEY = 'mbe.mistakes.v1';
 export const BACKUP_FORMAT = 'mbe-mistakes';
@@ -173,7 +173,9 @@ export class MistakeStore {
   }
 
   recordSession(questions, answers, attempt) {
-    const expected = createAttempt(questions, answers, attempt.id, attempt.completedAt);
+    const options = attempt.details ? { ...attempt.details,
+      rounds: Object.fromEntries(attempt.details.questions.map(question => [question.subject, question.round])) } : null;
+    const expected = createAttempt(questions, answers, attempt.id, attempt.completedAt, options);
     if (!sameAttempt(expected, attempt)) throw new Error('练习成绩与作答不一致');
     const previous = this.readAttempts();
     const merged = mergeAttempts(previous, [attempt]);

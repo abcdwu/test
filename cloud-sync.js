@@ -1,5 +1,5 @@
 import { esc } from './common.js?v=3';
-import { mistakeStore } from './browser-store.js?v=5';
+import { mistakeStore } from './browser-store.js?v=9';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';
 const panel = document.getElementById('sync-panel');
@@ -7,7 +7,7 @@ let apiBase = '', session = null, syncing = false, queued = false, merging = fal
 let status = '错题自动保存在当前浏览器。', showLogin = false;
 let remoteRevision = null;
 const uploaded = new Map();
-const uploadedAttempts = new Set();
+const uploadedAttempts = new Map();
 
 function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); }
 
@@ -71,7 +71,7 @@ export async function sync() {
   status = '正在自动同步错题…'; render();
   try {
     const outgoing = mistakeStore.read().filter(entry => uploaded.get(entry.question.id) !== JSON.stringify(entry));
-    const attempts = mistakeStore.readAttempts().filter(attempt => !uploadedAttempts.has(attempt.id));
+    const attempts = mistakeStore.readAttempts().filter(attempt => uploadedAttempts.get(attempt.id) !== JSON.stringify(attempt));
     const result = await api('/api/sync', { body: { entries: outgoing, attempts, revision: remoteRevision } });
     if (session !== activeSession) return;
     merging = true;
@@ -80,12 +80,12 @@ export async function sync() {
     await mistakeStore.merge(result.entries);
     if (Array.isArray(result.attempts)) {
       await mistakeStore.mergeAttempts(result.attempts);
-      for (const attempt of [...attempts, ...result.attempts]) uploadedAttempts.add(attempt.id);
+      for (const attempt of [...attempts, ...result.attempts]) uploadedAttempts.set(attempt.id, JSON.stringify(attempt));
     }
     for (const entry of [...outgoing, ...result.entries]) uploaded.set(entry.question.id, JSON.stringify(entry));
     remoteRevision = result.revision;
     merging = false;
-    status = `错题已自动同步 · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    status = `错题已自动同步（含练习记录） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
     if (attempts.length && !Array.isArray(result.attempts)) status = '错题已同步，累计统计暂仅保存在本机，服务更新后会自动补传。';
     if (JSON.stringify(mistakeStore.read()) !== before || JSON.stringify(mistakeStore.readAttempts()) !== beforeAttempts) window.dispatchEvent(new Event('mbe:cloud-synced'));
   } catch (error) {
