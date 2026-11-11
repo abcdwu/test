@@ -128,13 +128,14 @@ export function remainingPool(questions, attempts, source = 'bank') {
 export function historyMarkup(attempts, limit = 20) {
   const ordered = [...attempts].sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt) || b.id.localeCompare(a.id));
   if (!ordered.length) return '<p class="sub">交卷后，这里会自动记录每次练习。</p>';
-  return `<p class="note history-note">点击完成时间可反复回看当时题目与作答，不重复计分。错题数字为本次题号，未答计错。升级前未保存的用时与题号显示为 —，无法展开旧题目。</p>
+  return `<p class="note history-note">每条记录下方显示当时的题干、选项与作答，点击完成时间可查看完整解析。错题数字为本次题号，未答计错。旧记录未保存的用时与题目无法补齐。</p>
     <table class="history-table"><thead><tr><th>完成时间</th><th>用时</th><th>题数</th><th>错题题号</th></tr></thead><tbody>${ordered.slice(0, limit).map(attempt => {
       const details = attempt.details;
       const numbers = details?.questions.filter(question => !question.correct).map(question => question.number).join('、') || '—';
       const time = `<time datetime="${esc(attempt.completedAt)}">${esc(new Date(attempt.completedAt).toLocaleString('zh-CN', { hour12: false }))}</time>`;
       return `<tr data-attempt-id="${esc(attempt.id)}"><td>${details ? `<button type="button" class="history-time" data-attempt-review="${esc(attempt.id)}">${time}</button>` : time}<small>${esc(attempt.subjects.length === 1 ? subjectLabel(attempt.subjects[0].subject) : '混合科目')}${details?.source === 'mistakes' ? ' · 错题重练' : ''}</small></td>
-        <td>${details ? esc(formatTime(details.durationSeconds)) : '—'}</td><td>${attempt.total}</td><td class="wrong-numbers">${numbers}</td></tr>`;
+        <td>${details ? esc(formatTime(details.durationSeconds)) : '—'}</td><td>${attempt.total}</td><td class="wrong-numbers">${numbers}</td></tr>
+        ${details ? `<tr class="history-questions-row"><td colspan="4" class="history-questions-cell"><div data-inline-attempt="${esc(attempt.id)}"><p class="sub" role="status">正在准备这次练习的具体题目…</p></div></td></tr>` : ''}`;
     }).join('')}</tbody></table>
     ${ordered.length > limit ? '<button type="button" class="secondary" id="history-more">显示更多记录</button>' : ''}`;
 }

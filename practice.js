@@ -7,7 +7,7 @@ import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup } from './mistake-store.js?v=9';
 import { mistakeStore } from './browser-store.js?v=9';
 import './cloud-sync.js?v=9';
-import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=9';
+import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=10';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -19,6 +19,8 @@ let reviewing = false;
 const practiceSource = fromMistakes ? 'mistakes' : 'bank';
 let bankLoading = false, catalog = null, storeReady = false, preparing = false, startToken = 0;
 const knownQuestions = new Map();
+const historySubjectLoads = new Map();
+let historyObserver = null;
 const backupLink = '<a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/">使用备用入口 →</a>';
 
 function cumulativeSummary() {
@@ -43,12 +45,79 @@ function historySection(open = false) {
   return `<section id="history-panel" class="card history-panel"><details ${open ? 'open' : ''}><summary>练习记录</summary>${content}</details></section>`;
 }
 function mountHistory() {
+  historyObserver?.disconnect();
   app.querySelectorAll('[data-attempt-review]').forEach(button => button.addEventListener('click', () => showHistoryAttempt(button.dataset.attemptReview)));
   document.getElementById('history-more')?.addEventListener('click', () => {
     historyLimit += 20;
     const panel = document.getElementById('history-panel');
     panel.outerHTML = historySection(true); mountHistory();
   });
+  const details = document.querySelector('#history-panel > details');
+  if (!details) return;
+  const observeQuestions = () => {
+    historyObserver?.disconnect();
+    if (!details.open) return;
+    const targets = details.querySelectorAll('[data-inline-attempt]:not([data-loaded])');
+    if (typeof IntersectionObserver !== 'function') { targets.forEach(loadInlineHistory); return; }
+    historyObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) if (entry.isIntersecting) {
+        historyObserver.unobserve(entry.target); loadInlineHistory(entry.target);
+      }
+    }, { rootMargin: '200px' });
+    targets.forEach(target => historyObserver.observe(target));
+  };
+  details.addEventListener('toggle', observeQuestions);
+  observeQuestions();
+}
+
+async function historyQuestions(attempt) {
+  for (const key of new Set(attempt.details.questions.filter(record => !knownQuestions.has(record.id)).map(record => record.subject))) {
+    if (!historySubjectLoads.has(key)) {
+      const loading = loadBank(key).then(questions => {
+        for (const question of questions) knownQuestions.set(question.id, question);
+      }).finally(() => historySubjectLoads.delete(key));
+      historySubjectLoads.set(key, loading);
+    }
+    await historySubjectLoads.get(key);
+  }
+  const questions = attempt.details.questions.map(record => knownQuestions.get(record.id));
+  if (questions.some(question => !question)) throw new Error('部分题目暂时无法恢复，请稍后重试。');
+  return questions;
+}
+
+async function loadInlineHistory(target) {
+  if (!target.isConnected || target.dataset.loaded) return;
+  target.dataset.loaded = 'loading';
+  try {
+    const attempt = mistakeStore.readAttempts().find(item => item.id === target.dataset.inlineAttempt);
+    if (!attempt?.details) throw new Error('这条旧记录未保存题目明细，无法恢复。');
+    const questions = await historyQuestions(attempt);
+    if (!target.isConnected) return;
+    target.innerHTML = questions.map((question, index) => {
+      const record = attempt.details.questions[index];
+      const source = question.source;
+      const pages = Array.isArray(source?.questionPages) ? source.questionPages.filter(page => Number.isInteger(page) && page > 0) : [];
+      const original = /^sources\/[a-z0-9-]+\.pdf$/.test(source?.pdfPath) && pages.length
+        ? `<p class="history-source"><a class="text-link" href="${esc(source.pdfPath)}#page=${pages[0]}" target="_blank" rel="noopener">题目原始 PDF · 第 ${pages.join('、')} 页（含图表） ↗</a></p>` : '';
+      return `<article class="history-question" data-saved-question-id="${esc(question.id)}">
+        <div class="history-question-label">第 ${index + 1} 题 · ${esc(subjectLabel(question.subject))}</div>
+        <p class="history-stem">${esc(question.stem)}</p>
+        <ol class="history-choices">${question.choices.map((choice, number) => {
+          const letter = 'ABCD'[number];
+          return `<li class="${letter === question.answer ? 'correct' : letter === record.selected ? 'wrong' : ''}"><span>${letter}.</span><span>${esc(choice)}</span></li>`;
+        }).join('')}</ol>
+        <p class="history-answer">当时作答：${record.selected ?? '未作答'} · 正确答案：${question.answer} · ${record.correct ? '回答正确' : '回答错误'}</p>
+        ${original}
+      </article>`;
+    }).join('');
+    target.dataset.loaded = 'true';
+  } catch (error) {
+    if (!target.isConnected) return;
+    target.innerHTML = `<p class="notice error" role="alert">${esc(error.message || '题目暂时无法载入，请重试。')}</p><button type="button" class="secondary" data-inline-retry>重试载入题目</button>`;
+    target.querySelector('[data-inline-retry]').addEventListener('click', () => {
+      delete target.dataset.loaded; loadInlineHistory(target);
+    });
+  }
 }
 
 async function showHistoryAttempt(id) {
@@ -62,12 +131,8 @@ async function showHistoryAttempt(id) {
   try {
     const attempt = mistakeStore.readAttempts().find(item => item.id === id);
     if (!attempt?.details) throw new Error('这条旧记录未保存题目明细，无法恢复。');
-    for (const key of new Set(attempt.details.questions.map(question => question.subject))) {
-      for (const question of await loadBank(key)) knownQuestions.set(question.id, question);
-      if (token !== startToken) return;
-    }
-    const questions = attempt.details.questions.map(record => knownQuestions.get(record.id));
-    if (questions.some(question => !question)) throw new Error('部分题目暂时无法恢复，请稍后重试。');
+    const questions = await historyQuestions(attempt);
+    if (token !== startToken) return;
     const wrong = attempt.details.questions.filter(record => !record.correct).map(record => record.number).join('、') || '—';
     app.innerHTML = `${back}<div class="eyebrow spaced">Practice history</div><h1>历史练习。</h1>
       <p class="sub">${esc(new Date(attempt.completedAt).toLocaleString('zh-CN', { hour12: false }))}<br>
