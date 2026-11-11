@@ -128,3 +128,40 @@ test('cloud sessions merge immutable quiz results once and preserve them across 
     assert.deepEqual(summarizeAttempts((await sync([])).attempts), { correct: 18, total: 30, sessions: 2 });
   } finally { if (api?.server.listening) await stop(); rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('detailed history, original answers and round progress survive cloud restart and legacy clients without duplicate counting', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'mbe-history-api-'));
+  let api, base;
+  async function start() {
+    api = createApi({ databasePath: join(directory, 'db.sqlite'), loginPassword: privatePassword, allowedOrigins: [origin] });
+    await new Promise(resolve => api.server.listen(0, '127.0.0.1', resolve));
+    base = `http://127.0.0.1:${api.server.address().port}`;
+  }
+  async function stop() { await new Promise(resolve => api.server.close(resolve)); api.closeDatabase(); }
+  const request = (path, body, token) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+  try {
+    await start();
+    const token = (await (await request('/auth/login', { password: privatePassword })).json()).token;
+    const qs = [question, { ...question, id: question.id + '-second' }];
+    const full = createAttempt(qs, ['ABCD'.indexOf(question.answer), null], 'history-session', '2026-11-11T08:02:03Z', {
+      startedAt: '2026-11-11T08:00:00Z', durationSeconds: 123, source: 'bank', rounds: { [question.subject]: 2 },
+    });
+    const { details, ...legacy } = full;
+    const sync = async attempts => {
+      const response = await request('/api/sync', { entries: [], attempts }, token);
+      assert.equal(response.status, 200); return response.json();
+    };
+    await sync([legacy]); const enriched = await sync([full]);
+    assert.deepEqual(enriched.attempts, [full]);
+    const retried = await sync([legacy]);
+    assert.deepEqual(retried.attempts, [full]); assert.equal(retried.revision, enriched.revision);
+    const conflicting = structuredClone(full); conflicting.details.durationSeconds++;
+    assert.equal((await request('/api/sync', { entries: [], attempts: [conflicting] }, token)).status, 400);
+    await stop(); await start();
+    assert.deepEqual((await sync([])).attempts, [full]);
+  } finally {
+    if (api?.server.listening) await stop();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

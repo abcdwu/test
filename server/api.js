@@ -29,7 +29,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
   const failures = new Map();
   const readEntries = () => db.prepare('SELECT entry FROM mistakes ORDER BY id').all().map(row => JSON.parse(row.entry));
   const readAttempts = () => db.prepare('SELECT attempt FROM quiz_attempts ORDER BY id').all().map(row => JSON.parse(row.attempt));
-  const saveAttempt = db.prepare('INSERT INTO quiz_attempts(id, attempt) VALUES (?, ?)');
+  const saveAttempt = db.prepare('INSERT INTO quiz_attempts(id, attempt) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET attempt=excluded.attempt');
   const saveEntry = db.prepare('INSERT INTO mistakes(id, entry) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET entry=excluded.entry');
 
   function respond(response, status, body) {
@@ -111,8 +111,8 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
           let changed = false;
           const previousAttempts = readAttempts();
           const allAttempts = mergeAttempts(previousAttempts, body.attempts ?? []);
-          const known = new Set(previousAttempts.map(attempt => attempt.id));
-          for (const attempt of allAttempts) if (!known.has(attempt.id)) {
+          const known = new Map(previousAttempts.map(attempt => [attempt.id, JSON.stringify(attempt)]));
+          for (const attempt of allAttempts) if (known.get(attempt.id) !== JSON.stringify(attempt)) {
             saveAttempt.run(attempt.id, JSON.stringify(attempt)); changed = true;
           }
           for (const entry of body.entries) {
