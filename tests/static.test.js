@@ -13,6 +13,7 @@ test('the backup serves the public app and bank with PDF ranges, but never priva
     assert.equal(app.headers.get('cache-control'), 'no-cache');
     const highlights = await fetch(base + '/highlights.js');
     assert.equal(highlights.status, 200); assert.match(await highlights.text(), /mountHighlights/);
+    const core = await fetch(base + '/highlight-core.js'); assert.equal(core.status, 200);
     const manifestResponse = await fetch(base + '/bank/manifest.json', { headers: { Origin: 'https://test.chaoxu.me' } });
     assert.equal(manifestResponse.headers.get('access-control-allow-origin'), 'https://test.chaoxu.me');
     const manifest = await manifestResponse.json(); assert.equal(manifest.total, 1803);

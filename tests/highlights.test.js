@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeRanges, removeRange, segmentHitsRect } from '../highlights.js';
+import { mergeRanges, removeRange, segmentHitsRect } from '../highlight-core.js';
 
 test('highlight intervals merge overlap and adjacency without changing other selections', () => {
   assert.deepEqual(mergeRanges([[18, 25], [2, 7], [6, 10], [10, 13]], 30), [[2, 13], [18, 25]]);

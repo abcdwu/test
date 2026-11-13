@@ -1,3 +1,4 @@
+import { mergeHighlights, validateHighlights } from './highlight-core.js?v=1';
 import { answerLetter, SUBJECTS } from './common.js?v=3';
 import { createAttempt, mergeAttempts, sameAttempt, validateAttempts } from './progress.js?v=9';
 
@@ -57,11 +58,11 @@ export function mergeEntry(previous, incoming) {
   };
 }
 
-export function backupText(entries, attempts = []) {
+export function backupText(entries, attempts = [], highlights = []) {
   validateEntries(entries);
-  validateAttempts(attempts);
+  validateAttempts(attempts); validateHighlights(highlights);
   return JSON.stringify({
-    format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), entries, attempts,
+    format: BACKUP_FORMAT, version: 1, exportedAt: new Date().toISOString(), entries, attempts, highlights,
   }, null, 2);
 }
 
@@ -74,11 +75,12 @@ export function parseBackupData(text) {
   if (data?.format !== BACKUP_FORMAT || data.version !== 1) throw new Error('请选择 MBE 错题本导出的备份文件');
   validateEntries(data.entries);
   validateAttempts(data.attempts ?? []);
-  return { entries: data.entries, attempts: data.attempts ?? [] };
+  validateHighlights(data.highlights ?? []);
+  return { entries: data.entries, attempts: data.attempts ?? [], highlights: data.highlights ?? [] };
 }
 
-export function downloadBackup(entries, attempts = []) {
-  const url = URL.createObjectURL(new Blob([backupText(entries, attempts)], { type: 'application/json' }));
+export function downloadBackup(entries, attempts = [], highlights = []) {
+  const url = URL.createObjectURL(new Blob([backupText(entries, attempts, highlights)], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = `MBE-错题备份-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
@@ -93,21 +95,23 @@ export class MistakeStore {
 
   readData() {
     const raw = this.storage.getItem(STORAGE_KEY);
-    if (raw === null) return { version: 1, entries: [], attempts: [] };
+    if (raw === null) return { version: 1, entries: [], attempts: [], highlights: [] };
     const data = JSON.parse(raw);
     if (data?.version !== 1) {
       throw new Error('错题本数据无法读取');
     }
     validateEntries(data.entries);
     validateAttempts(data.attempts ?? []);
-    return { version: 1, entries: data.entries, attempts: data.attempts ?? [] };
+    validateHighlights(data.highlights ?? []);
+    return { version: 1, entries: data.entries, attempts: data.attempts ?? [], highlights: data.highlights ?? [] };
   }
 
   read() { return this.readData().entries; }
   readAttempts() { return this.readData().attempts; }
-  write(entries, attempts = this.readAttempts()) {
-    validateEntries(entries); validateAttempts(attempts);
-    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries, attempts }));
+  readHighlights() { return this.readData().highlights; }
+  write(entries, attempts = this.readAttempts(), highlights = this.readHighlights()) {
+    validateEntries(entries); validateAttempts(attempts); validateHighlights(highlights);
+    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, entries, attempts, highlights }));
   }
 
   restore(text) {
@@ -115,7 +119,7 @@ export class MistakeStore {
     const attempts = mergeAttempts(previous.attempts, data.attempts);
     const entries = new Map(previous.entries.map(entry => [entry.question.id, entry]));
     for (const entry of data.entries) entries.set(entry.question.id, mergeEntry(entries.get(entry.question.id), entry));
-    this.write([...entries.values()], attempts);
+    this.write([...entries.values()], attempts, mergeHighlights(previous.highlights, data.highlights));
     return { added: entries.size - previous.entries.length, total: entries.size };
   }
 
@@ -182,6 +186,11 @@ export class MistakeStore {
     if (merged.length === previous.length) return questions.filter((question, index) => answerLetter(answers[index]) !== question.answer).length;
     const result = this.recordEntries(questions, answers, attempt.completedAt);
     this.write(result.entries, merged); return result.added;
+  }
+
+  mergeHighlights(incoming) {
+    const previous = this.readData();
+    this.write(previous.entries, previous.attempts, mergeHighlights(previous.highlights, incoming));
   }
 
   mergeAttempts(incoming) {

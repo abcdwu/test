@@ -1,12 +1,12 @@
-import { mountHighlights } from './highlights.js?v=2';
+import { mountHighlights } from './highlights.js?v=3';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
 } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
-import { downloadBackup } from './mistake-store.js?v=9';
-import { mistakeStore } from './browser-store.js?v=9';
-import './cloud-sync.js?v=9';
+import { downloadBackup } from './mistake-store.js?v=12';
+import { mistakeStore } from './browser-store.js?v=12';
+import './cloud-sync.js?v=12';
 import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=10';
 
 const app = document.getElementById('app');
@@ -400,7 +400,9 @@ function results(automatic, saved) {
       question, lastAnswer: answerLetter(answers[index]), wrongCount: 1,
       firstWrongAt: timestamp, lastWrongAt: timestamp,
     }]);
-    downloadBackup(entries, [session.attempt]);
+    let highlights = [];
+    try { highlights = mistakeStore.readHighlights(); } catch { /* Still allow the current unsaved attempt to be backed up. */ }
+    downloadBackup(entries, [session.attempt], highlights);
   });
   mountHistory();
   mountHighlights(app);
