@@ -1,43 +1,8 @@
-const PREFIX = 'mbe-highlights:v1:';
+import { mistakeStore } from './browser-store.js?v=12';
+import { HIGHLIGHT_PREFIX as PREFIX, mergeRanges, removeRange, mergeHighlights, highlightRanges, highlightChange, cachedHighlight, segmentHitsRect } from './highlight-core.js?v=1';
+export { mergeRanges, removeRange, segmentHitsRect } from './highlight-core.js?v=1';
 const memory = new Map();
 const controllers = new WeakMap();
-
-export function mergeRanges(ranges, length) {
-  const sorted = ranges.filter(range => Array.isArray(range) && range.length === 2
-    && Number.isInteger(range[0]) && Number.isInteger(range[1])
-    && range[0] >= 0 && range[0] < range[1] && range[1] <= length)
-    .map(range => [...range]).sort((a, b) => a[0] - b[0]);
-  const result = [];
-  for (const range of sorted) {
-    const last = result.at(-1);
-    if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1]);
-    else result.push(range);
-  }
-  return result;
-}
-
-export function removeRange(ranges, [start, end]) {
-  return ranges.flatMap(([left, right]) => {
-    if (right <= start || left >= end) return [[left, right]];
-    return [...(left < start ? [[left, start]] : []), ...(right > end ? [[end, right]] : [])];
-  });
-}
-
-// Clip a pen segment to the glyph rectangle. Testing the whole segment keeps
-// fast strokes continuous even when the browser delivers few pointer events.
-export function segmentHitsRect(from, to, rect, padding = 2) {
-  if (Math.max(from.x, to.x) < rect.left - padding || Math.min(from.x, to.x) > rect.right + padding
-    || Math.max(from.y, to.y) < rect.top - padding || Math.min(from.y, to.y) > rect.bottom + padding) return false;
-  let enter = 0, exit = 1;
-  for (const [axis, low, high] of [['x', rect.left - padding, rect.right + padding], ['y', rect.top - padding, rect.bottom + padding]]) {
-    const delta = to[axis] - from[axis];
-    if (delta === 0) { if (from[axis] < low || from[axis] > high) return false; continue; }
-    const a = (low - from[axis]) / delta, b = (high - from[axis]) / delta;
-    enter = Math.max(enter, Math.min(a, b)); exit = Math.min(exit, Math.max(a, b));
-    if (enter > exit) return false;
-  }
-  return true;
-}
 
 function glyphs(state) {
   const nodes = [], walker = document.createTreeWalker(state.stem, NodeFilter.SHOW_TEXT);
@@ -68,15 +33,18 @@ function glyphs(state) {
 }
 
 function read(id, text) {
-  let record, unavailable = false;
-  try { record = JSON.parse(localStorage.getItem(PREFIX + id) || 'null'); }
+  const records = [];
+  let unavailable = false;
+  try { records.push(...mistakeStore.readHighlights().filter(record => record.questionId === id && record.text === text)); }
   catch { unavailable = true; }
-  if (unavailable || memory.get(id)?.unavailable) {
-    record = memory.get(id);
-    unavailable = true;
-  }
-  return { ranges: record?.text === text && Array.isArray(record.ranges)
-    ? mergeRanges(record.ranges, text.length) : [], unavailable };
+  try {
+    const cached = cachedHighlight(id, JSON.parse(localStorage.getItem(PREFIX + id) || 'null'));
+    if (cached?.text === text) records.push(cached);
+  } catch { /* Keep the IndexedDB copy readable. */ }
+  const pending = memory.get(id);
+  if (pending?.text === text) records.push(pending);
+  const record = records.reduce((merged, record) => mergeHighlights(merged, [record]), [])[0] || { questionId: id, text, operations: [] };
+  return { record, ranges: highlightRanges(record), unavailable };
 }
 
 function paint(state) {
@@ -135,13 +103,14 @@ class Highlighter {
       }
       this.cancelStroke();
       if (action !== 'clear' && this.pending?.state !== state) return;
-      const ranges = action === 'clear' ? [] : action === 'add'
-        ? mergeRanges([...state.ranges, this.pending.range], state.text.length)
-        : removeRange(state.ranges, this.pending.range);
-      this.save(state, ranges, action === 'add');
+      this.save(state, action === 'clear' ? [[0, state.text.length]] : [this.pending.range], action === 'add');
       document.getSelection()?.removeAllRanges();
       this.selection();
     });
+    window.addEventListener('mbe:cloud-synced', () => this.refreshSaved());
+    window.addEventListener('mbe:local-refreshed', () => this.refreshSaved());
+    window.addEventListener('mbe:highlights-changed', () => this.refreshSaved());
+    mistakeStore.ready.then(() => this.refreshSaved());
     window.addEventListener('storage', event => {
       if (event.key !== null && !event.key.startsWith(PREFIX)) return;
       this.cancelStroke();
@@ -152,23 +121,41 @@ class Highlighter {
         paint(state);
       }
       this.selection();
+      mistakeStore.importHighlightCache().then(() => this.refreshSaved()).catch(() => {});
     });
   }
 
-  save(state, ranges, adding) {
-    const record = { text: state.text, ranges };
+  async save(state, affected, adding) {
+    const record = highlightChange(read(state.id, state.text).record, adding ? 'add' : 'remove', affected);
     memory.set(state.id, record);
-    let saved = true;
-    try {
-      if (ranges.length) localStorage.setItem(PREFIX + state.id, JSON.stringify(record));
-      else localStorage.removeItem(PREFIX + state.id);
-    } catch { saved = false; }
-    record.unavailable = !saved;
+    let cached = true;
+    try { localStorage.setItem(PREFIX + state.id, JSON.stringify({ ...record, ranges: highlightRanges(record) })); }
+    catch { cached = false; }
     for (const item of this.states.filter(item => item.id === state.id && item.text === state.text)) {
-      item.ranges = ranges; item.unavailable = !saved; paint(item);
-      item.status.textContent = saved ? (adding ? '已高亮，保存在本机。' : '已取消高亮，保存在本机。')
-        : '本机保存失败，标记仅在本页暂存；请检查浏览器存储权限或空间。';
+      item.ranges = highlightRanges(record); paint(item); item.status.textContent = '正在保存高亮…';
     }
+    let saved = true;
+    try { await mistakeStore.mergeHighlights([record]); }
+    catch { saved = false; }
+    for (const item of this.states.filter(item => item.id === state.id && item.text === state.text)) {
+      if (this.stroke?.state === item) continue;
+      const latest = read(item.id, item.text).ranges;
+      if (JSON.stringify(latest) !== JSON.stringify(item.ranges)) { item.ranges = latest; paint(item); }
+      item.unavailable = !saved;
+      item.status.textContent = saved ? (adding ? '已高亮，保存在本机；登录后自动云同步。' : '已取消高亮，保存在本机；登录后自动云同步。')
+        : cached ? '已保存在本机缓存，暂未写入同步存储，请保留页面并刷新重试。'
+          : '本机保存失败，标记仅在本页暂存；请检查浏览器存储权限或空间。';
+    }
+  }
+
+  refreshSaved() {
+    for (const state of this.states) {
+      if (!state.stem.isConnected || this.stroke?.state === state) continue;
+      const stored = read(state.id, state.text);
+      if (JSON.stringify(stored.ranges) !== JSON.stringify(state.ranges)) { state.ranges = stored.ranges; paint(state); }
+      state.unavailable = stored.unavailable;
+    }
+    this.selection();
   }
 
   updateMode() {
@@ -177,8 +164,8 @@ class Highlighter {
       for (const action of ['pen', 'eraser']) state.toolbar.querySelector(`[data-highlight="${action}"]`)
         .setAttribute('aria-pressed', String(this.penMode === action));
       state.status.textContent = this.penMode
-        ? `用 Apple Pencil 划过题干${this.penMode === 'pen' ? '高亮' : '擦除高亮'}；手指拖动可滚动。标记仅保存在当前浏览器。`
-        : '选中文字后可高亮；也可开启“笔高亮”使用 Apple Pencil。仅保存在当前浏览器。';
+        ? `用 Apple Pencil 划过题干${this.penMode === 'pen' ? '高亮' : '擦除高亮'}；手指拖动可滚动。标记在本机保存，登录后自动云同步。`
+        : '选中文字后可高亮；也可开启“笔高亮”使用 Apple Pencil。本机保存，登录后自动云同步。';
       if (state.unavailable) state.status.textContent = '本机存储不可用，标记仅在本页暂存。' + state.status.textContent;
     }
   }
@@ -231,7 +218,7 @@ class Highlighter {
     this.pointerMove(event);
     const stroke = this.stroke;
     this.stroke = null;
-    if (stroke.touched.size) this.save(stroke.state, stroke.state.ranges, !stroke.erasing);
+    if (stroke.touched.size) this.save(stroke.state, [...stroke.touched.values()], !stroke.erasing);
     this.selection();
   }
 
@@ -289,7 +276,7 @@ class Highlighter {
       stem.before(toolbar);
       const status = toolbar.querySelector('.highlight-status');
       status.textContent = stored.unavailable ? '本机存储不可用，标记仅在本页暂存。'
-        : '选中题干文字后可高亮；手机长按选择。仅保存在当前浏览器。';
+        : '选中题干文字后可高亮；手机长按选择。本机保存，登录后自动云同步。';
       for (const action of ['pen', 'eraser']) toolbar.querySelector(`[data-highlight="${action}"]`).disabled = !('PointerEvent' in window);
       const state = { stem, text, id, ranges: stored.ranges, toolbar, status, unavailable: stored.unavailable };
       paint(state);

@@ -8,7 +8,7 @@ const bank = [...all.filter(q => q.subject === 'torts').slice(0, 12), ...all.fil
   .map(({ source, ...q }) => q);
 async function attempts(page) {
   return page.evaluate(async () => {
-    const { mistakeStore } = await import('/browser-store.js?v=9'); await mistakeStore.ready; return mistakeStore.readAttempts();
+    const { mistakeStore } = await import('/browser-store.js?v=12'); await mistakeStore.ready; return mistakeStore.readAttempts();
   });
 }
 async function finish(page, total, bad = []) {
@@ -93,7 +93,7 @@ async function finish(page, total, bad = []) {
     restored.on('request', request => { if (/\/bank\/.+\.gz/.test(request.url())) downloads++; });
     await restored.goto(origin + '/?subject=torts'); await restored.locator('#start').waitFor();
     await restored.evaluate(async record => {
-      const { mistakeStore } = await import('/browser-store.js?v=9'); await mistakeStore.mergeAttempts([record]);
+      const { mistakeStore } = await import('/browser-store.js?v=12'); await mistakeStore.mergeAttempts([record]);
       window.dispatchEvent(new Event('mbe:cloud-synced'));
     }, first);
     assert.equal(downloads, 0);

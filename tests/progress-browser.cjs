@@ -68,7 +68,7 @@ async function login(page) {
     const upgraded = await legacyContext.newPage(); await home(upgraded);
     assert.equal(await oldTab.evaluate(() => window.legacyClosed), true);
     const legacy = await upgraded.evaluate(async () => {
-      const { mistakeStore } = await import('/browser-store.js?v=9');
+      const { mistakeStore } = await import('/browser-store.js?v=12');
       await mistakeStore.ready;
       return { entries: mistakeStore.read(), attempts: mistakeStore.readAttempts() };
     });
@@ -112,11 +112,11 @@ async function login(page) {
     await first.getByText(/错题已自动同步/).waitFor();
     await second.evaluate(() => dispatchEvent(new Event('online')));
     await second.waitForFunction(() => document.querySelector('#cumulative-rate')?.textContent === '57.5%');
-    await second.evaluate(async () => { const { sync } = await import('/cloud-sync.js?v=9'); await sync(); await sync(); });
+    await second.evaluate(async () => { const { sync } = await import('/cloud-sync.js?v=12'); await sync(); await sync(); });
     assert.match(await second.locator('#cumulative-summary').textContent(), /累计答对 23 \/ 40 题/);
     assert.match(await second.locator('#cumulative-summary').textContent(), /已完成 4 次练习/);
     const history = await second.evaluate(async () => {
-      const { mistakeStore } = await import('/browser-store.js?v=9'); return mistakeStore.readAttempts();
+      const { mistakeStore } = await import('/browser-store.js?v=12'); return mistakeStore.readAttempts();
     });
     assert.ok(history.every(record => record.details && record.details.questions.length === record.total));
     const ids = history.flatMap(record => record.details.questions.map(question => question.id));

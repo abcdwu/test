@@ -1,15 +1,17 @@
 import { esc } from './common.js?v=3';
-import { mistakeStore } from './browser-store.js?v=9';
+import { mistakeStore } from './browser-store.js?v=12';
+import { highlightKey } from './highlight-core.js?v=1';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';
 const panel = document.getElementById('sync-panel');
 let apiBase = '', session = null, syncing = false, queued = false, merging = false;
-let status = '错题自动保存在当前浏览器。', showLogin = false;
+let status = '错题、练习记录与高亮自动保存在当前浏览器。', showLogin = false;
 let remoteRevision = null;
 const uploaded = new Map();
 const uploadedAttempts = new Map();
+const uploadedHighlights = new Map();
 
-function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); }
+function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); uploadedHighlights.clear(); }
 
 function render() {
   if (!panel) return;
@@ -68,25 +70,34 @@ export async function sync() {
   if (syncing) { queued = true; return; }
   const activeSession = session;
   syncing = true;
-  status = '正在自动同步错题…'; render();
+  status = '正在自动同步数据…'; render();
   try {
+    await mistakeStore.importHighlightCache();
     const outgoing = mistakeStore.read().filter(entry => uploaded.get(entry.question.id) !== JSON.stringify(entry));
     const attempts = mistakeStore.readAttempts().filter(attempt => uploadedAttempts.get(attempt.id) !== JSON.stringify(attempt));
-    const result = await api('/api/sync', { body: { entries: outgoing, attempts, revision: remoteRevision } });
+    const highlights = mistakeStore.readHighlights().filter(record => uploadedHighlights.get(highlightKey(record)) !== JSON.stringify(record));
+    const result = await api('/api/sync', { body: { entries: outgoing, attempts, highlights, revision: remoteRevision } });
     if (session !== activeSession) return;
     merging = true;
     const before = JSON.stringify(mistakeStore.read());
     const beforeAttempts = JSON.stringify(mistakeStore.readAttempts());
+    const beforeHighlights = JSON.stringify(mistakeStore.readHighlights());
     await mistakeStore.merge(result.entries);
     if (Array.isArray(result.attempts)) {
       await mistakeStore.mergeAttempts(result.attempts);
       for (const attempt of [...attempts, ...result.attempts]) uploadedAttempts.set(attempt.id, JSON.stringify(attempt));
     }
+    if (Array.isArray(result.highlights)) {
+      await mistakeStore.mergeHighlights(result.highlights);
+      for (const record of [...highlights, ...result.highlights]) uploadedHighlights.set(highlightKey(record), JSON.stringify(record));
+    }
     for (const entry of [...outgoing, ...result.entries]) uploaded.set(entry.question.id, JSON.stringify(entry));
     remoteRevision = result.revision;
     merging = false;
-    status = `错题已自动同步（含练习记录） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    status = `错题已自动同步（含练习记录与高亮） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    if (highlights.length && !Array.isArray(result.highlights)) status = '错题已同步，高亮暂仅保存在本机，服务更新后会自动补传。';
     if (attempts.length && !Array.isArray(result.attempts)) status = '错题已同步，累计统计暂仅保存在本机，服务更新后会自动补传。';
+    if (JSON.stringify(mistakeStore.readHighlights()) !== beforeHighlights) window.dispatchEvent(new Event('mbe:highlights-changed'));
     if (JSON.stringify(mistakeStore.read()) !== before || JSON.stringify(mistakeStore.readAttempts()) !== beforeAttempts) window.dispatchEvent(new Event('mbe:cloud-synced'));
   } catch (error) {
     if (session !== activeSession) return;
@@ -94,7 +105,7 @@ export async function sync() {
       session = null;
       try { localStorage.removeItem(SESSION_KEY); } catch { /* Keep local data. */ }
       status = '云端登录已到期，请重新输入密码。本机错题已保留。';
-    } else { status = '暂未同步，错题已保存在本机，联网后会自动重试。'; }
+    } else { status = '暂未同步，数据已保存在本机，联网后会自动重试。'; }
   } finally {
     merging = false; syncing = false; render();
     if (queued) { queued = false; setTimeout(sync, 500); }

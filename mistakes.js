@@ -1,9 +1,9 @@
-import { mountHighlights } from './highlights.js?v=2';
+import { mountHighlights } from './highlights.js?v=3';
 import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
-import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=9';
-import { mistakeStore } from './browser-store.js?v=9';
-import './cloud-sync.js?v=9';
+import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=12';
+import { mistakeStore } from './browser-store.js?v=12';
+import './cloud-sync.js?v=12';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');
@@ -32,7 +32,7 @@ function render() {
       <summary>手动备份与恢复（可选）</summary>
       <p class="sub">云同步启用后无需日常操作。也可自行保留 JSON 备份；恢复时合并记录、保留现有错题，重复导入不会重复累计次数。</p>
       <div class="nav">
-        <button class="secondary" id="export" ${!entries.length && !mistakeStore.readAttempts().length ? 'disabled' : ''}>导出错题与累计统计</button>
+        <button class="secondary" id="export" ${!entries.length && !mistakeStore.readAttempts().length && !mistakeStore.readHighlights().length ? 'disabled' : ''}>导出错题、统计与高亮</button>
         <button class="secondary" id="import">从备份恢复</button>
       </div>
       <input type="file" id="backup-file" accept=".json,application/json" hidden>
@@ -48,7 +48,7 @@ function render() {
   document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; render(); });
   document.getElementById('export').addEventListener('click', () => {
     try {
-      downloadBackup(mistakeStore.read(), mistakeStore.readAttempts());
+      downloadBackup(mistakeStore.read(), mistakeStore.readAttempts(), mistakeStore.readHighlights());
       backupMessage = '已生成备份，请保留下载的 JSON 文件。'; backupError = false;
     } catch { backupMessage = '导出失败，请检查浏览器存储和下载权限。'; backupError = true; }
     render();

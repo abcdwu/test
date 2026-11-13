@@ -62,6 +62,7 @@ def api(path, body=None, token=None, method="POST"):
 health = api("/health", method="GET")
 assert health["ok"] and "quiz-attempts" in health.get("features", [])
 assert "public-bank" in health.get("features", [])
+assert "highlights" in health.get("features", [])
 manifest = api("/bank/manifest.json", method="GET")
 assert manifest == json.loads(Path("bank/manifest.json").read_text())
 for info in manifest["subjects"].values():
@@ -78,6 +79,7 @@ session = api("/auth/login", {"password": password})
 try:
     synced = api("/api/sync", {"entries": [], "attempts": []}, session["token"])
     assert isinstance(synced["entries"], list) and isinstance(synced["attempts"], list)
+    assert isinstance(synced["highlights"], list)
 finally:
     api("/auth/session", token=session["token"], method="DELETE")
 

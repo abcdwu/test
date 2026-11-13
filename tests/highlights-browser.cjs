@@ -96,7 +96,7 @@ async function openQuestion(page, id) {
       await page.evaluate(id => localStorage.setItem('mbe-highlights:v1:' + id, JSON.stringify({ text: 'different stem', ranges: [[0, 5]] })), id);
       await openQuestion(page, id); assert.deepEqual(await marks(page), []);
 
-      // Quota failure is visible, preserves the current mark when navigating, and leaves quiz saving usable.
+      // Cache quota failure falls back to the persistent IndexedDB copy.
       await page.evaluate(() => {
         const set = Storage.prototype.setItem;
         Storage.prototype.setItem = function(key, value) {
@@ -105,7 +105,7 @@ async function openQuestion(page, id) {
         };
       });
       await select(page, 1, 9); await press('add');
-      assert.match(await page.locator('.highlight-status').textContent(), /保存失败/);
+      await page.getByText('已高亮，保存在本机；登录后自动云同步。', { exact: true }).waitFor();
       if (await page.locator('#next').count()) { await page.locator('#next').click(); await page.locator('#previous').click(); }
       else { await page.locator('#previous').click(); await page.locator('#next').click(); }
       assert.deepEqual(await marks(page), [stem.slice(1, 9)]);

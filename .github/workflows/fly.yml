@@ -9,6 +9,7 @@ on:
       - bank/**
       - bank-loader.js
       - highlights.js
+      - highlight-core.js
       - fly.toml
       - progress.js
       - mistake-store.js

@@ -23,3 +23,4 @@
 !vendor/pdfjs/
 !vendor/pdfjs/**
 !highlights.js
+!highlight-core.js

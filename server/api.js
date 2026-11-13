@@ -5,6 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mergeEntry, validateEntries } from '../mistake-store.js';
 import { mergeAttempts, validateAttempts } from '../progress.js';
+import { mergeHighlights, validateHighlights, highlightKey } from '../highlight-core.js';
 import { serveStatic } from './static.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -22,6 +23,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     CREATE TABLE IF NOT EXISTS mistakes (id TEXT PRIMARY KEY, entry TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS quiz_attempts (id TEXT PRIMARY KEY, attempt TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS highlights (id TEXT PRIMARY KEY, record TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL);
     INSERT OR IGNORE INTO sync_state VALUES (1, 0);`);
   const passwordSalt = randomBytes(32);
@@ -29,6 +31,8 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
   const failures = new Map();
   const readEntries = () => db.prepare('SELECT entry FROM mistakes ORDER BY id').all().map(row => JSON.parse(row.entry));
   const readAttempts = () => db.prepare('SELECT attempt FROM quiz_attempts ORDER BY id').all().map(row => JSON.parse(row.attempt));
+  const readHighlights = () => db.prepare('SELECT record FROM highlights ORDER BY id').all().map(row => JSON.parse(row.record));
+  const saveHighlight = db.prepare('INSERT INTO highlights(id, record) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET record=excluded.record');
   const saveAttempt = db.prepare('INSERT INTO quiz_attempts(id, attempt) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET attempt=excluded.attempt');
   const saveEntry = db.prepare('INSERT INTO mistakes(id, entry) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET entry=excluded.entry');
 
@@ -61,7 +65,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     }
     if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
     const path = request.url?.split('?')[0];
-    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts', ...(staticDirectory ? ['public-bank'] : [])] }); return; }
+    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts', 'highlights', ...(staticDirectory ? ['public-bank'] : [])] }); return; }
     if (serveStatic(request, response, staticDirectory)) return;
     try {
       if (path === '/auth/login' && request.method === 'POST') {
@@ -103,6 +107,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
         const body = await readJson(request);
         validateEntries(body.entries);
         validateAttempts(body.attempts ?? []);
+        validateHighlights(body.highlights ?? []);
         if (body.entries.length > 10_000) throw new Error('Too many entries');
         db.exec('BEGIN IMMEDIATE');
         let revision;
@@ -114,6 +119,12 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
           const known = new Map(previousAttempts.map(attempt => [attempt.id, JSON.stringify(attempt)]));
           for (const attempt of allAttempts) if (known.get(attempt.id) !== JSON.stringify(attempt)) {
             saveAttempt.run(attempt.id, JSON.stringify(attempt)); changed = true;
+          }
+          const oldHighlights = readHighlights();
+          const knownHighlights = new Map(oldHighlights.map(record => [highlightKey(record), JSON.stringify(record)]));
+          for (const record of mergeHighlights(oldHighlights, body.highlights ?? [])) {
+            const key = highlightKey(record);
+            if (knownHighlights.get(key) !== JSON.stringify(record)) { saveHighlight.run(hash(key), JSON.stringify(record)); changed = true; }
           }
           for (const entry of body.entries) {
             const merged = mergeEntry(existing.get(entry.question.id), entry);
@@ -128,6 +139,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
         respond(response, 200, {
           entries: body.revision === revision ? [] : readEntries(),
           attempts: body.revision === revision ? [] : readAttempts(),
+          highlights: body.revision === revision ? [] : readHighlights(),
           revision, syncedAt: new Date().toISOString(),
         }); return;
       }
