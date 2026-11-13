@@ -136,4 +136,3 @@ export function segmentHitsRect(from, to, rect, padding = 2) {
   }
   return true;
 }
-
