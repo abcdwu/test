@@ -1,4 +1,4 @@
-import { mountHighlights } from './highlights.js?v=1';
+import { mountHighlights } from './highlights.js?v=2';
 import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=8';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=9';

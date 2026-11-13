@@ -8,6 +8,7 @@ on:
       - server/**
       - bank/**
       - bank-loader.js
+      - highlights.js
       - fly.toml
       - progress.js
       - mistake-store.js
