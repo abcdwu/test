@@ -1,4 +1,4 @@
-import { mountHighlights } from './highlights.js?v=1';
+import { mountHighlights } from './highlights.js?v=2';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
