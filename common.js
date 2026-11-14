@@ -77,11 +77,16 @@ function sourcePages(question, kind) {
 function originalPages(question, kind) {
   const label = kind === 'question' ? '题目' : '解析';
   return `<div class="source-pages">${sourcePages(question, kind).map(page => `<figure class="pdf-source-page" data-pdf-path="${esc(question.source.pdfPath)}" data-pdf-page="${page}">
-    <figcaption><span>${label} · PDF 第 ${page} 页</span><a class="text-link" href="${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">打开原始 PDF ↗</a><a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/${esc(question.source.pdfPath)}#page=${page}" target="_blank" rel="noopener">备用 PDF ↗</a></figcaption>
+    <figcaption><span>${label} · PDF 第 ${page} 页</span><a class="text-link" href="${esc(sourcePageUrl(question, kind, page))}" target="_blank" rel="noopener">打开原始 PDF ↗</a><a class="text-link" href="https://abcdwu-mbe-mistakes.fly.dev/${esc(sourcePageUrl(question, kind, page))}" target="_blank" rel="noopener">备用原页 ↗</a><a class="text-link" href="${esc(question.source.pdfPath)}" target="_blank" rel="noopener">下载整份 PDF ↗</a></figcaption>
     <div class="pdf-page-surface" aria-label="${label}原文 PDF 第 ${page} 页">
       <p class="pdf-page-status" role="status">浏览到这里时载入原文页面…</p>
     </div>
   </figure>`).join('')}</div>`;
+}
+
+export function sourcePageUrl(question, kind = 'question', page = null) {
+  const pages = sourcePages(question, kind);
+  return 'source.html?' + new URLSearchParams({ subject: question.subject, pages: pages.join(','), focus: String(page && pages.includes(page) ? page : pages[0]) }).toString();
 }
 
 // This helper deliberately reads questionPages only: quiz markup must not include answer pages.

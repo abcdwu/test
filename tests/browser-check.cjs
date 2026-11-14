@@ -99,7 +99,7 @@ async function submitAllBlank(page,count=5){await page.getByRole('button',{name:
  await sourcePage.screenshot({path:'/tmp/mbe-source-review-mobile.png',fullPage:true});
  console.log('PASS question-only source previews, full explanation pages, actual PDF rendering, responsive canvases, capped pixels and lazy mistake reviews');
  const fallback=await sourceContext.newPage();let failPdf=true;
- await fallback.route('**/sources/*.pdf',r=>failPdf?r.fulfill({status:404,body:'test unavailable'}):r.continue());
+ await fallback.route(url => url.pathname.startsWith('/sources/') && url.pathname.endsWith('.pdf'),r=>failPdf?r.fulfill({status:404,body:'test unavailable'}):r.continue());
  await open(fallback);await fallback.locator('#start').click();await fallback.locator('.source-question summary').click();
  await fallback.locator('.pdf-page-error').waitFor({timeout:60_000});
  assert.equal(await fallback.locator('.pdf-source-page a').first().getAttribute('href'),`${original.source.pdfPath}#page=${original.source.questionPages[0]}`);

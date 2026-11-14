@@ -10,6 +10,14 @@ on:
       - bank-loader.js
       - highlights.js
       - highlight-core.js
+      - pdf-source.js
+      - public-assets.js
+      - source-chunks.js
+      - source-viewer.js
+      - word-translation.js
+      - source.html
+      - dictionary/**
+      - sources/pages/**
       - fly.toml
       - progress.js
       - mistake-store.js

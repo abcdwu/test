@@ -24,3 +24,10 @@
 !vendor/pdfjs/**
 !highlights.js
 !highlight-core.js
+!source.html
+!source-viewer.js
+!source-chunks.js
+!public-assets.js
+!word-translation.js
+!dictionary/
+!dictionary/**

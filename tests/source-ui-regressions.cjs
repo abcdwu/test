@@ -103,7 +103,7 @@ async function entries(page) {
       await retryPage.getByRole('button', { name: '重试载入' }).click();
       await retryPage.locator('.source-question .pdf-page-status[hidden]').waitFor({ state: 'attached', timeout: 60_000 });
       assert.ok(requests > failedRequests, `${asset} is downloaded again after its failed import`);
-      assert.ok(await retryPage.locator('canvas').evaluate(canvas => canvas.width > 0 && canvas.height > 0));
+      assert.ok(await retryPage.locator('canvas[role="img"]').evaluate(canvas => canvas.width > 0 && canvas.height > 0));
       console.log(`PASS temporary ${asset} download failure recovers with Retry without reloading the page`);
       await retryContext.close();
     }
@@ -111,7 +111,7 @@ async function entries(page) {
     const downloadContext = await contextWithBank(browser, [samples[0]]);
     const downloadPage = await downloadContext.newPage();
     let failDownload = true;
-    await downloadContext.route('**/sources/*.pdf', route => failDownload
+    await downloadContext.route(url => url.pathname.startsWith('/sources/') && url.pathname.endsWith('.pdf'), route => failDownload
       ? route.fulfill({ status: 503, body: 'Temporary PDF failure' }) : route.continue());
     await downloadPage.goto(origin);
     await downloadPage.locator('#start').click();

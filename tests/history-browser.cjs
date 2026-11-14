@@ -101,7 +101,7 @@ async function finish(page, total, bad = []) {
     await restored.locator('.history-question').nth(4).waitFor();
     assert.equal(downloads, 1, 'only the required subject is downloaded, once');
     assert.deepEqual(await restored.locator('.history-stem').allTextContents(), firstIds.map(id => bank.find(q => q.id === id).stem));
-    assert.equal(await restored.locator('.history-source a').getAttribute('href'), `${original.source.pdfPath}#page=${original.source.questionPages[0]}`);
+    assert.equal(await restored.locator('.history-source a').getAttribute('href'), 'source.html?' + new URLSearchParams({ subject: original.subject, pages: original.source.questionPages.join(','), focus: String(original.source.questionPages[0]) }).toString());
     assert.equal(await restored.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.deepEqual(await attempts(restored), [first]);
     await restored.locator('#history-panel').scrollIntoViewIfNeeded();

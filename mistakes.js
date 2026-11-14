@@ -1,6 +1,7 @@
+import './word-translation.js?v=1';
 import { mountHighlights } from './highlights.js?v=3';
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=8';
-import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=9';
+import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=12';
 import { mistakeStore } from './browser-store.js?v=12';
 import './cloud-sync.js?v=12';

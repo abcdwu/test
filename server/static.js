@@ -3,7 +3,7 @@ import { extname, resolve, sep } from 'node:path';
 
 const roots = new Set(['index.html', 'mistakes.html', 'styles.css', 'common.js', 'bank-loader.js',
   'practice.js', 'mistakes.js', 'browser-store.js', 'mistake-store.js', 'progress.js',
-  'cloud-sync.js', 'highlights.js', 'highlight-core.js', 'pdf-source.js', 'cloud-config.json']);
+  'cloud-sync.js', 'highlights.js', 'highlight-core.js', 'pdf-source.js', 'cloud-config.json', 'source.html', 'source-viewer.js', 'public-assets.js', 'source-chunks.js', 'word-translation.js']);
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.pdf': 'application/pdf', '.gz': 'application/gzip',
@@ -16,7 +16,7 @@ export function serveStatic(request, response, directory) {
   catch { response.writeHead(400); response.end(); return true; }
   if (path === '/') path = '/index.html';
   const relative = path.slice(1);
-  if (!roots.has(relative) && !/^(bank|sources|vendor\/pdfjs)\/[A-Za-z0-9_.\/-]+$/.test(relative)) return false;
+  if (!roots.has(relative) && !/^(bank|sources|dictionary|vendor\/pdfjs)\/[A-Za-z0-9_.\/-]+$/.test(relative)) return false;
   const root = resolve(directory), file = resolve(root, relative);
   if (!file.startsWith(root + sep) || relative.split('/').some(part => part === '..' || part.startsWith('.'))) {
     response.writeHead(404); response.end(); return true;

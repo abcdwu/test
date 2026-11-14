@@ -1,0 +1,41 @@
+name: Build verified PDF page chunks
+
+on:
+  pull_request:
+    paths:
+      - scripts/build_source_pages.py
+      - .github/workflows/source-pages.yml
+      - sources/*.pdf
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-pages-${{ github.head_ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyMuPDF==1.26.6
+      - name: Generate and verify every source page
+        run: python scripts/build_source_pages.py
+      - name: Commit generated public assets to the pull request branch
+        env:
+          TARGET_BRANCH: ${{ github.head_ref }}
+        run: |
+          git add sources/pages
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Generate verified small PDF page chunks'
+          git push origin "HEAD:$TARGET_BRANCH"

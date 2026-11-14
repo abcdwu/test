@@ -1,9 +1,10 @@
+import './word-translation.js?v=1';
 import { mountHighlights } from './highlights.js?v=3';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
-  questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions,
-} from './common.js?v=8';
-import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=3';
+  questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
+} from './common.js?v=9';
+import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=4';
 import { downloadBackup } from './mistake-store.js?v=12';
 import { mistakeStore } from './browser-store.js?v=12';
 import './cloud-sync.js?v=12';
@@ -98,7 +99,7 @@ async function loadInlineHistory(target) {
       const source = question.source;
       const pages = Array.isArray(source?.questionPages) ? source.questionPages.filter(page => Number.isInteger(page) && page > 0) : [];
       const original = /^sources\/[a-z0-9-]+\.pdf$/.test(source?.pdfPath) && pages.length
-        ? `<p class="history-source"><a class="text-link" href="${esc(source.pdfPath)}#page=${pages[0]}" target="_blank" rel="noopener">题目原始 PDF · 第 ${pages.join('、')} 页（含图表） ↗</a></p>` : '';
+        ? `<p class="history-source"><a class="text-link" href="${esc(sourcePageUrl(question))}" target="_blank" rel="noopener">题目原始 PDF · 第 ${pages.join('、')} 页（含图表） ↗</a></p>` : '';
       return `<article class="history-question" data-saved-question-id="${esc(question.id)}">
         <div class="history-question-label">第 ${index + 1} 题 · ${esc(subjectLabel(question.subject))}</div>
         <p class="history-stem">${esc(question.stem)}</p>
@@ -196,6 +197,9 @@ function home() {
       <div class="label spaced" id="count-label">这次想做多少题？</div>
       <div class="counts" role="group" aria-labelledby="count-label">${[5, 10, 15, 20].map(number => `
         <button class="count ${number === count ? 'active' : ''}" data-count="${number}" aria-pressed="${number === count}">${number} 题</button>`).join('')}</div>
+      <label class="label spaced" for="question-count">自定义题数</label>
+      <input id="question-count" type="number" min="1" step="1" inputmode="numeric" value="${count}" aria-describedby="count-error count-note">
+      <p id="count-error" class="notice error" role="alert" hidden>请输入大于 0 的整数。</p>
       <label class="label spaced" for="timer-mode">计时方式</label>
       <select id="timer-mode">
         <option value="natural" ${mode === 'natural' ? 'selected' : ''}>自然计时 · 从 00:00 开始</option>
@@ -204,7 +208,7 @@ function home() {
       <p class="sub timing-hint">${mode === 'countdown'
         ? `${actualCount} 题 × 1.8 分钟 = ${formatTime(actualCount * 108)}，时间到自动交卷。`
         : '记录本次练习的用时，没有时间限制。'}</p>
-      ${remaining && remaining < count ? `<p class="notice">本轮剩余 ${remaining} 道题，本次将练习这 ${remaining} 题，不混入下一轮。</p>` : ''}
+      <p id="count-note" class="notice" ${remaining && remaining < count ? '' : 'hidden'}>本轮剩余 ${remaining} 道题，本次将练习这 ${remaining} 题，不混入下一轮。</p>
       <button class="primary" id="start" ${!available || !storeReady || storageError ? 'disabled' : ''}>${nextRound ? '开始下一轮' : '开始'}${fromMistakes ? '错题' : ''}练习　→</button>
       <p class="notice error" id="bank-status" role="alert" hidden></p>
       <p class="note">交卷后记录已做题，本轮内不重复；未交卷退出不消耗题目。</p>
@@ -216,11 +220,33 @@ function home() {
   app.querySelectorAll('[data-count]').forEach(button => button.addEventListener('click', () => {
     count = Number(button.dataset.count); home();
   }));
+  const customCount = document.getElementById('question-count');
+  customCount.addEventListener('input', () => {
+    const value = Number(customCount.value), valid = customCount.value.trim() !== '' && Number.isSafeInteger(value) && value > 0;
+    customCount.setCustomValidity(valid ? '' : '请输入大于 0 的整数。');
+    document.getElementById('count-error').hidden = valid;
+    document.getElementById('start').disabled = !valid || !available || !storeReady || storageError;
+    if (!valid) return;
+    count = value;
+    app.querySelectorAll('[data-count]').forEach(button => {
+      const selected = Number(button.dataset.count) === count;
+      button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected));
+    });
+    const actual = Math.min(count, remaining);
+    app.querySelector('.timing-hint').textContent = mode === 'countdown'
+      ? `${actual} 题 × 1.8 分钟 = ${formatTime(actual * 108)}，时间到自动交卷。` : '记录本次练习的用时，没有时间限制。';
+    document.getElementById('count-note').hidden = !remaining || count <= remaining;
+  });
   document.getElementById('start').addEventListener('click', start);
   mountHistory();
 }
 
 async function start() {
+  const requestedCount = document.getElementById('question-count');
+  if (requestedCount && (!requestedCount.value.trim() || !Number.isSafeInteger(Number(requestedCount.value)) || Number(requestedCount.value) < 1)) {
+    requestedCount.setCustomValidity('请输入大于 0 的整数。'); requestedCount.reportValidity(); return;
+  }
+  if (requestedCount) count = Number(requestedCount.value);
   const token = ++startToken;
   const selectedSubject = subject;
   const button = document.getElementById('start');
@@ -265,6 +291,7 @@ async function start() {
   };
   render();
   ticker = setInterval(updateClock, 250);
+  setTimeout(() => { if (session && !session.submitted) warmSourceLibrary(); }, 1500);
   window.scrollTo(0, 0);
 }
 
