@@ -1,4 +1,5 @@
 // Original pages are rendered locally. No third-party scripts or document services are used.
+import { sourceChunk } from './source-chunks.js?v=1';
 const mounts = new WeakMap();
 const documents = new Map();
 const DOCUMENT_CACHE_LIMIT = 2;
@@ -33,15 +34,18 @@ function trimDocuments() {
   }
 }
 
-async function acquireDocument(path) {
-  let entry = documents.get(path);
+async function acquireDocument(path, pageNumber) {
+  let chunk;
+  try { chunk = await sourceChunk(path, pageNumber); } catch { /* Original PDFs remain a fallback. */ }
+  const key = chunk?.key || path;
+  let entry = documents.get(key);
   if (!entry) {
     entry = { users: 0, promise: null };
     const loadingLibrary = pdfLibrary();
     let loadingTask;
     entry.promise = loadingLibrary.then(pdfjs => {
       loadingTask = pdfjs.getDocument({
-        url: new URL(path, document.baseURI).href,
+        ...(chunk ? { data: new Uint8Array(chunk.data.slice(0)) } : { url: new URL(path, document.baseURI).href }),
         standardFontDataUrl: new URL('./vendor/pdfjs/standard_fonts/', import.meta.url).href,
         cMapUrl: new URL('./vendor/pdfjs/cmaps/', import.meta.url).href,
         cMapPacked: true,
@@ -53,7 +57,7 @@ async function acquireDocument(path) {
       });
       return loadingTask.promise;
     }).catch(async error => {
-      if (documents.get(path) === entry) documents.delete(path);
+      if (documents.get(key) === entry) documents.delete(key);
       // PDF.js also retains a rejected fake-worker import internally. A fresh
       // library/worker URL allows retry after that temporary download failure.
       if (/worker/i.test(error?.message || '') && library === loadingLibrary) library = null;
@@ -61,10 +65,10 @@ async function acquireDocument(path) {
       try { await loadingTask?.destroy(); } catch { /* Retain the original loading error. */ }
       throw error;
     });
-    documents.set(path, entry);
+    documents.set(key, entry);
   } else {
-    documents.delete(path);
-    documents.set(path, entry);
+    documents.delete(key);
+    documents.set(key, entry);
   }
   entry.users++;
   let released = false;
@@ -74,7 +78,7 @@ async function acquireDocument(path) {
     entry.users--;
     trimDocuments();
   };
-  try { return { document: await entry.promise, release }; }
+  try { return { document: await entry.promise, pageNumber: chunk?.pageNumber || pageNumber, release }; }
   catch (error) { release(); throw error; }
 }
 
@@ -93,7 +97,7 @@ export function mountSourcePages(container) {
     figure, surface: figure.querySelector('.pdf-page-surface'),
     status: figure.querySelector('.pdf-page-status'),
     path: figure.dataset.pdfPath, pageNumber: Number(figure.dataset.pdfPage),
-    state: 'idle', token: 0, visible: false, canvas: null, task: null,
+    state: 'idle', token: 0, visible: false, canvas: null, task: null, textTask: null, textElement: null,
   }]));
   const exposed = model => !model.figure.closest('details:not([open])');
   const valid = (model, token) => alive && model.token === token && model.figure.isConnected && exposed(model);
@@ -102,6 +106,8 @@ export function mountSourcePages(container) {
     model.token++;
     model.task?.cancel();
     model.task = null;
+    model.textTask?.cancel(); model.textTask = null;
+    model.textElement?.remove(); model.textElement = null;
     if (model.canvas) {
       model.canvas.width = model.canvas.height = 0;
       model.canvas.remove();
@@ -122,9 +128,9 @@ export function mountSourcePages(container) {
       if (!/^sources\/[a-z0-9-]+\.pdf$/.test(model.path) || !Number.isInteger(model.pageNumber) || model.pageNumber < 1) {
         throw new Error('Invalid source page');
       }
-      handle = await acquireDocument(model.path);
+      handle = await acquireDocument(model.path, model.pageNumber);
       if (!valid(model, token)) return;
-      page = await handle.document.getPage(model.pageNumber);
+      page = await handle.document.getPage(handle.pageNumber);
       if (!valid(model, token)) return;
       const natural = page.getViewport({ scale: 1 });
       const width = Math.max(1, model.surface.clientWidth);
@@ -148,6 +154,21 @@ export function mountSourcePages(container) {
       if (!valid(model, token)) return;
       model.state = 'ready';
       model.status.hidden = true;
+      // A transparent local text layer makes original PDF text selectable for
+      // word lookup. Image-only diagrams remain visually unchanged.
+      try {
+        const pdfjs = await pdfLibrary();
+        if (!valid(model, token)) return;
+        const element = document.createElement('div'); element.className = 'textLayer';
+        element.style.setProperty('--total-scale-factor', viewport.scale);
+        element.style.setProperty('--scale-round-x', '1px'); element.style.setProperty('--scale-round-y', '1px');
+        model.textElement = element; model.surface.append(element);
+        const textTask = new pdfjs.TextLayer({ textContentSource: page.streamTextContent(), container: element, viewport });
+        model.textTask = textTask;
+        await textTask.render();
+        if (!valid(model, token)) element.remove();
+        if (model.textTask === textTask) model.textTask = null;
+      } catch { /* A lookup layer failure must not hide a complete original page. */ }
     } catch (error) {
       if (!valid(model, token) || error?.name === 'RenderingCancelledException') return;
       if (model.canvas) {
@@ -256,4 +277,15 @@ export function mountSourcePages(container) {
     queue.length = 0;
     for (const model of models.values()) reset(model);
   } });
+}
+
+export function warmSourceLibrary() {
+  // Fetch the local renderer while the learner is answering, without fetching
+  // question or answer PDFs and without delaying the quiz timer.
+  if (navigator.connection?.saveData) return;
+  pdfLibrary().then(pdfjs => {
+    if (document.querySelector('link[data-pdf-worker-warm]')) return;
+    const link = document.createElement('link'); link.rel = 'modulepreload'; link.href = pdfjs.GlobalWorkerOptions.workerSrc;
+    link.dataset.pdfWorkerWarm = 'true'; document.head.append(link);
+  }).catch(() => {});
 }

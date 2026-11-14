@@ -24,7 +24,7 @@ for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.
       assert.equal(digest(await get(base, entry)), digest(entryBytes), 'Latest entry contents must be published');
       const highlightEntry = /from '\.\/(highlights\.js\?v=\d+)'/.exec(entryBytes.toString())[1];
       assert.equal(digest(await get(base, highlightEntry)), digest(readFileSync(new URL('../highlights.js', import.meta.url))), 'Highlight controls must be published');
-      for (const file of ['progress.js', 'cloud-sync.js', 'browser-store.js', 'mistake-store.js', 'highlight-core.js']) {
+      for (const file of ['progress.js', 'cloud-sync.js', 'browser-store.js', 'mistake-store.js', 'highlight-core.js', 'common.js', 'pdf-source.js', 'public-assets.js', 'source-chunks.js', 'source-viewer.js', 'source.html', 'word-translation.js']) {
         assert.equal(digest(await get(base, file)), digest(readFileSync(new URL('../' + file, import.meta.url))), 'Practice history and sync modules must be published');
       }
       const catalog = JSON.parse((await get(base, 'bank/manifest.json')).toString());
@@ -33,7 +33,15 @@ for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.
       const bytes = await get(base, 'bank/' + subject.file);
       assert.equal(digest(bytes), subject.sha256);
       assert.equal(bytes.byteLength, subject.bytes);
-      console.log('PASS public homepage, entry module, 1803-question catalogue and Torts hash at ' + new URL(base).hostname);
+      for (const directory of ['dictionary', 'sources/pages']) {
+        const local = JSON.parse(readFileSync(new URL('../' + directory + '/manifest.json', import.meta.url)));
+        const remote = JSON.parse((await get(base, directory + '/manifest.json')).toString());
+        assert.deepEqual(remote, local, 'Published reading asset catalogue must match this release');
+        const asset = directory === 'dictionary' ? local : local.subjects.torts.chunks[3];
+        const data = await get(base, directory + '/' + asset.file);
+        assert.equal(digest(data), asset.sha256); assert.equal(data.byteLength, asset.bytes);
+      }
+      console.log('PASS public app, 1803-question catalogue, dictionary and verified original-page chunk at ' + new URL(base).hostname);
       failure = null; break;
     } catch (error) {
       failure = error;
