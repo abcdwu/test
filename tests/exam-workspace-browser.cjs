@@ -15,8 +15,28 @@ async function setup(browser, mobile = false) {
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
   try {
     const { context, page } = await setup(browser); const errors = []; page.on('pageerror', error => errors.push(error.message));
+    let translationRequests = 0;
+    await context.route(/api\.mymemory\.translated\.net\/get/, route => {
+      translationRequests++;
+      const original = new URL(route.request().url()).searchParams.get('q');
+      return route.fulfill({ json: { responseStatus: 200, responseData: { translatedText: '中译 ' + original } },
+        headers: { 'access-control-allow-origin': '*' } });
+    });
     await page.locator('#study-mode').selectOption('exam'); await page.locator('#question-count').fill('3'); await page.locator('#start').click(); await page.locator('.exam-layout').waitFor();
     assert.equal(await page.locator('.explain').count(), 0, 'exam must not reveal answers before submission');
+    await page.locator('#translate-question').click();
+    await page.locator('.translation-choices li').nth(3).waitFor();
+    assert.match(await page.locator('.translation-stem').textContent(), /中译/);
+    assert.equal(await page.locator('.translation-choices li').count(), 4);
+    assert.equal(await page.locator('[data-choice]').count(), 4, 'translation does not replace the English choices');
+    assert.equal(await page.locator('.option.selected').count(), 0, 'translation cannot select an answer');
+    const calls = translationRequests;
+    await page.locator('#translate-question').click();
+    assert.equal(await page.locator('.translation-panel').count(), 0);
+    await page.locator('#translate-question').click();
+    await page.locator('.translation-choices li').nth(3).waitFor();
+    assert.equal(translationRequests, calls, 'reopening an existing translation avoids new requests');
+    assert.equal(await page.locator('.explain').count(), 0, 'machine translation must not reveal the answer');
     assert.ok(await page.locator('.exam-sidebar').isVisible()); await page.locator('#flag-question').click();
     await page.locator('[data-choice="0"]').click(); assert.ok(await page.locator('[data-jump="0"]').getAttribute('class').then(s => s.includes('answered')));
     await page.locator('[data-exclude="0"]').click(); assert.equal(await page.locator('.option.selected').count(), 0);
