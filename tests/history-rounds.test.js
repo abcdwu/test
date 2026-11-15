@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MistakeStore, backupText } from '../mistake-store.js';
-import { createAttempt, mergeAttempts, validateAttempts, remainingPool, roundProgress, orderQuestionsBySource, historyMarkup } from '../progress.js';
+import { createAttempt, mergeAttempts, validateAttempts, remainingPool, roundProgress, orderQuestionsBySource, orderedPractice, historyMarkup } from '../progress.js';
 const startedAt = '2026-11-11T08:00:00Z', completedAt = '2026-11-11T08:02:03Z';
 const qs = Array.from({ length: 12 }, (_, i) => ({ id: `torts-${i}`, subject: 'torts', stem: `Stem ${i}`,
   choices: ['A', 'B', 'C', 'D'], answer: 'A', explanation: 'Explanation' }));
@@ -84,6 +84,18 @@ test('every subject uses descending original PDF question numbers without random
     'sorting must not mutate the original question bank');
   assert.deepEqual(orderQuestionsBySource([source('torts', 5), source('torts', 5, '-other')]).map(q => q.id),
     ['torts-5', 'torts-5-other'], 'same-number ties use a stable ID');
+});
+
+test('fixed-position descending practice includes all previously answered questions', () => {
+  const source = number => ({ id: 'torts-' + number, subject: 'torts',
+    source: { pdfPath: 'sources/torts.pdf', questionNumber: number } });
+  const bank = [source(8), source(10), source(7), source(9)];
+  assert.deepEqual(orderedPractice(bank, 1, 4).map(q => q.source.questionNumber), [10, 9, 8, 7]);
+  assert.deepEqual(orderedPractice(bank, 2, 2).map(q => q.source.questionNumber), [9, 8]);
+  assert.deepEqual(orderedPractice(bank, 1, 4).map(q => q.source.questionNumber), [10, 9, 8, 7]);
+  assert.equal(orderedPractice(bank, 4, 10).length, 1);
+  assert.throws(() => orderedPractice(bank, 0, 2), RangeError);
+  assert.throws(() => orderedPractice(bank, 1, 0), RangeError);
 });
 
 test('malformed detail records and results that disagree with answers are rejected atomically', () => {
