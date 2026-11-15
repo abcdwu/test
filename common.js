@@ -88,7 +88,7 @@ export function sourcePageUrl(question, kind = 'question', page = null) {
   const pages = sourcePages(question, kind);
   // Classification can differ from the PDF that actually contains the question.
   const pdfSubject = /^sources\/([a-z0-9-]+)\.pdf$/.exec(question.source?.pdfPath ?? '')?.[1];
-  return 'source.html?' + new URLSearchParams({ subject: pdfSubject || question.subject, pages: pages.join(','), focus: String(page && pages.includes(page) ? page : pages[0]) }).toString();
+  return 'source.html?' + new URLSearchParams({ subject: pdfSubject || question.subject, kind, pages: pages.join(','), focus: String(page && pages.includes(page) ? page : pages[0]) }).toString();
 }
 
 // This helper deliberately reads questionPages only: quiz markup must not include answer pages.
@@ -120,10 +120,10 @@ export function explanationContent(question) {
       ? `<div class="explain source-explanation"><strong>完整原文解析</strong>
           <p class="source-note">以下保留原始 PDF 的全部解析页，包括图表。页码为 PDF 文件页码。</p>
           ${originalPages(question, 'explanation')}
-          <details class="extracted-text"><summary>复制解析文字（辅助文本）</summary>
-            <p class="source-note">提取文字可能存在排版或识别误差，图表及准确内容请查看上方原始页面。</p>
+          <div class="extracted-text"><strong>原文解析文字（无需加载 PDF）</strong>
+            <p class="source-note">文字提取可能存在排版误差，图表仍以原始 PDF 为准；在 iPad 无法载入原页时可直接阅读以下文字。</p>
             <div class="extracted-content">${esc(question.explanation)}</div>
-          </details>
+          </div>
         </div>`
       : `<div class="explain"><strong>原文解析</strong>\n\n${esc(question.explanation)}</div>`}`;
 }
