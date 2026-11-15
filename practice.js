@@ -3,13 +3,13 @@ import { mountHighlights } from './highlights.js?v=4';
 import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
-  questionSource, reviewQuestion, explanationContent, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
+  questionSource, reviewQuestion, explanationContent, subjectLabel, subjectOptions, sourcePageUrl,
 } from './common.js?v=11';
 import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=5';
 import { downloadBackup } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
 import './cloud-sync.js?v=15';
-import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=14';
+import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, orderQuestionsBySource, historyMarkup } from './progress.js?v=15';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
@@ -188,7 +188,7 @@ function home() {
     : `${round ? `第 ${round} 轮 · ` : '各科本轮合计 · '}已做 ${progress.completed} / ${available} 题，剩余 ${progress.remaining} 题。`;
   app.innerHTML = `<div class="eyebrow">${fromMistakes ? 'Review & grow' : 'A little progress, every day'}</div>
     <h1>${fromMistakes ? '重温错题，<br>巩固理解。' : '专注练习，<br>从容备考。'}</h1>
-    <p class="sub">按科目随机抽题，交卷后查看完整解析。<br>错题会自动收录到独立错题本。</p>
+    <p class="sub">按原 PDF 题号倒序练习，交卷后查看完整解析。<br>错题会自动收录到独立错题本。</p>
     ${fromMistakes ? '<p><a href="index.html" class="text-link">← 切换到完整题库</a></p>' : ''}
     ${storageError ? '<p class="notice error" role="alert">错题本无法读取，请检查浏览器存储权限。</p>' : ''}
     <section class="card accuracy-summary" id="cumulative-summary" aria-label="累计统计">${cumulativeSummary()}</section>
@@ -219,7 +219,7 @@ function home() {
       <button class="primary" id="start" ${!available || !storeReady || storageError ? 'disabled' : ''}>${nextRound ? '开始下一轮' : '开始'}${fromMistakes ? '错题' : ''}练习　→</button>
       <p class="notice error" id="bank-status" role="alert" hidden></p>
       <p class="note">交卷后记录已做题，本轮内不重复；未交卷退出不消耗题目。</p>
-      <p class="note">${available ? `随机抽题 · 当前科目共 ${available} 道题` : fromMistakes ? '当前科目暂无错题，完成练习后会自动收录。' : '当前科目暂无题目。'}</p>
+      <p class="note">${available ? `原题号倒序 · 当前科目共 ${available} 道题` : fromMistakes ? '当前科目暂无错题，完成练习后会自动收录。' : '当前科目暂无题目。'}</p>
     </section>
     <p class="foot">八科分开练习：民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法、侵权法。<br>错题在本机自动保存；登录云同步后可跨设备查看。清理浏览器前请确认同步完成。</p>`;
   document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; home(); });
@@ -281,7 +281,7 @@ async function start() {
     }
     if (token !== startToken) return;
     roundSelection = remainingPool(availableQuestions(), mistakeStore.readAttempts(), practiceSource);
-    questions = shuffle(roundSelection.questions).slice(0, count);
+    questions = orderQuestionsBySource(roundSelection.questions).slice(0, count);
   } catch (error) {
     if (token === startToken) {
       const status = document.getElementById('bank-status');
