@@ -1,4 +1,4 @@
-import { SUBJECTS, esc } from './common.js?v=10';
+import { SUBJECTS, esc } from './common.js?v=11';
 import { mountSourcePages } from './pdf-source.js?v=5';
 import { sourceChunkLocation } from './source-chunks.js?v=2';
 import './word-translation.js?v=2';
