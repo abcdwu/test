@@ -1,8 +1,8 @@
-import { esc, SUBJECTS, subjectLabel, loadBank, reviewQuestion } from './common.js?v=10';
+import { esc, SUBJECTS, subjectLabel, loadBank, reviewQuestion } from './common.js?v=11';
 import { mistakeStore } from './browser-store.js?v=14';
 import { studyValue } from './study-core.js?v=1';
 import { studyHistory, mountStudyTools, studyTools, flushStudyNotes } from './study-ui.js?v=1';
-import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
+import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=5';
 import { mountHighlights } from './highlights.js?v=4';
 import './word-translation.js?v=2';
 import './cloud-sync.js?v=15';
