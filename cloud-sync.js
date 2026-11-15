@@ -1,5 +1,5 @@
 import { esc } from './common.js?v=3';
-import { mistakeStore } from './browser-store.js?v=14';
+import { mistakeStore } from './browser-store.js?v=16';
 import { highlightKey } from './highlight-core.js?v=1';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';

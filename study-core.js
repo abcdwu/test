@@ -1,5 +1,5 @@
 // Append-only notebook revisions preserve edits from offline devices and backups.
-import { SUBJECTS } from './common.js?v=10';
+import { SUBJECTS } from './common.js?v=11';
 const subjects = new Set(SUBJECTS.map(item => item.id));
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 const order = (a, b) => a.clock - b.clock || compare(a.id, b.id);

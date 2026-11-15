@@ -1,6 +1,6 @@
-import { esc } from './common.js?v=10';
-import { mistakeStore } from './browser-store.js?v=14';
-import { studyValue } from './study-core.js?v=1';
+import { esc } from './common.js?v=11';
+import { mistakeStore } from './browser-store.js?v=16';
+import { studyValue, studyChange, mergeStudy } from './study-core.js?v=1';
 export const studyTools = (question, card = true) => `<details class="study-tools" data-study-id="${esc(question.id)}"><summary>本题笔记${card ? '与闪卡' : ''}</summary><div class="study-editor"></div></details>`;
 export function mountStudyTools(root, questions, allowCard = true) {
   const bank = new Map(questions.map(question => [question.id, question]));
@@ -48,6 +48,16 @@ export async function flushStudyNotes(root, questions) {
     catch { tools.querySelector('.study-status').textContent = '笔记保存失败，已保留当前输入，请重试。'; return false; }
   }
   return true;
+}
+export function backupStudyDrafts(root, questions, records = []) {
+  let result = records;
+  for (const tools of root.querySelectorAll('[data-study-id]')) {
+    const input = tools.querySelector('textarea.study-note'), question = questions.find(question => question.id === tools.dataset.studyId);
+    if (!question || !input || input.value === input.defaultValue) continue;
+    const record = result.find(record => record.questionId === question.id) || { questionId: question.id, subject: question.subject, revisions: [] };
+    result = mergeStudy(result, [studyChange(record, 'note', input.value)]);
+  }
+  return result;
 }
 window.addEventListener('beforeunload', event => {
   if ([...document.querySelectorAll('textarea.study-note')].some(input => input.value !== input.defaultValue)) { event.preventDefault(); event.returnValue = ''; }

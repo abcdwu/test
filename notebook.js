@@ -1,11 +1,11 @@
-import { esc, SUBJECTS, subjectLabel, loadBank, reviewQuestion } from './common.js?v=10';
-import { mistakeStore } from './browser-store.js?v=14';
+import { esc, SUBJECTS, subjectLabel, loadBank, reviewQuestion } from './common.js?v=11';
+import { mistakeStore } from './browser-store.js?v=16';
 import { studyValue } from './study-core.js?v=1';
-import { studyHistory, mountStudyTools, studyTools, flushStudyNotes } from './study-ui.js?v=1';
+import { studyHistory, flushStudyNotes } from './study-ui.js?v=2';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
-import { mountHighlights } from './highlights.js?v=4';
+import { mountHighlights, unmountHighlights } from './highlights.js?v=5';
 import './word-translation.js?v=2';
-import './cloud-sync.js?v=14';
+import './cloud-sync.js?v=16';
 const app = document.getElementById('app'), focus = new URLSearchParams(location.search).get('question');
 let subject = 'all', type = 'all';
 const loaded = new Map();
@@ -30,14 +30,15 @@ async function original(target, record) {
     const question = loaded.get(record.subject).find(question => question.id === record.questionId);
     if (!question) throw new Error('这道题暂时无法找到，请稍后重试。');
     if (!target.isConnected) return;
-    target.innerHTML = reviewQuestion(question, null) + studyTools(question);
-    mountHighlights(target); mountSourcePages(target); mountStudyTools(target, [question]);
+    target.innerHTML = reviewQuestion(question, null);
+    mountHighlights(target); mountSourcePages(target);
   } catch (error) {
     target.innerHTML = `<p class="notice error">${esc(error.message || '暂时无法读取，请重试。')}</p><button type="button" class="secondary">重试读取</button>`;
     target.querySelector('button').addEventListener('click', () => original(target, record));
   }
 }
 function render() {
+  for (const target of app.querySelectorAll('.notebook-source')) { unmountSourcePages(target); unmountHighlights(target); }
   unmountSourcePages(app);
   let records; try { records = mistakeStore.readStudy(); } catch { app.innerHTML = '<p class="notice error">笔记本无法读取，请检查存储权限后刷新。</p>'; return; }
   records = records.filter(record => (subject === 'all' || record.subject === subject) && (type === 'all'

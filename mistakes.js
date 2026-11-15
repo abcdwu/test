@@ -1,11 +1,11 @@
 import './word-translation.js?v=2';
-import { mountHighlights } from './highlights.js?v=4';
-import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=10';
+import { mountHighlights } from './highlights.js?v=5';
+import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=2';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=11';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
-import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=14';
-import { mistakeStore } from './browser-store.js?v=14';
-import './cloud-sync.js?v=14';
+import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=16';
+import { mistakeStore } from './browser-store.js?v=16';
+import './cloud-sync.js?v=16';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');

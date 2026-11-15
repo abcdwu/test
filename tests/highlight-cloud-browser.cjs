@@ -17,7 +17,7 @@ async function select(page, start, end) {
 }
 async function add(page, start, end) { await select(page, start, end); await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="add"]').click(); }
 async function marked(page) { return (await page.locator('.question mark').allTextContents()).join(''); }
-async function sync(page) { await page.evaluate(async () => { await (await import('/cloud-sync.js?v=14')).sync(); }); }
+async function sync(page) { await page.evaluate(async () => { await (await import('/cloud-sync.js?v=16')).sync(); }); }
 async function login(page) {
   await page.locator('#sync-toggle').click(); await page.locator('#cloud-password').fill('test-only-highlights');
   await page.getByRole('button', { name: '登录并记住此设备' }).click();
@@ -83,7 +83,7 @@ async function has(page, words) {
     await a.page.waitForFunction(() => document.querySelectorAll('.question mark').length === 0);
     await a.page.evaluate(async q => {
       localStorage.setItem('mbe-highlights:v1:' + q.id, JSON.stringify({ text: q.stem, ranges: [[0, 5]] }));
-      const { mistakeStore } = await import('/browser-store.js?v=14'); await mistakeStore.importHighlightCache();
+      const { mistakeStore } = await import('/browser-store.js?v=16'); await mistakeStore.importHighlightCache();
       dispatchEvent(new Event('mbe:local-refreshed'));
     }, sample);
     assert.equal(await marked(a.page), '', 'an old local cache cannot resurrect a cleared mark');
@@ -100,7 +100,7 @@ async function has(page, words) {
     await d.page.getByText(/恢复完成/).waitFor(); await d.page.goto(origin); await start(d.page); await has(d.page, ['Alpha']);
     // A highlight-only sync must not close an expanded wrong-book review.
     await a.page.evaluate(async q => {
-      const { mistakeStore } = await import('/browser-store.js?v=14'); await mistakeStore.record([q], [null]);
+      const { mistakeStore } = await import('/browser-store.js?v=16'); await mistakeStore.record([q], [null]);
     }, sample);
     await a.page.getByText(/错题已自动同步/).waitFor();
     b.page.once('dialog', dialog => dialog.accept()); await b.page.goto(origin + '/mistakes.html');
@@ -110,24 +110,24 @@ async function has(page, words) {
     assert.equal(await b.page.locator('.mistake').getAttribute('open'), '');
     // Notes/cards share private cloud persistence, retaining both offline revisions.
     await a.page.evaluate(async q => {
-      const { mistakeStore } = await import('/browser-store.js?v=14');
+      const { mistakeStore } = await import('/browser-store.js?v=16');
       await mistakeStore.saveStudy(q, 'note', 'Original notebook rule');
       await mistakeStore.saveStudy(q, 'card', { front: 'Recall the rule', back: 'Rule from the source' });
     }, sample);
     await a.page.getByText(/错题已自动同步/).waitFor(); await sync(b.page);
     await a.context.setOffline(true); await b.context.setOffline(true);
     for (const [device, text] of [[a, 'Device A offline revision'], [b, 'Device B offline revision']]) await device.page.evaluate(async ({ q, text }) => {
-      const { mistakeStore } = await import('/browser-store.js?v=14'); await mistakeStore.saveStudy(q, 'note', text);
+      const { mistakeStore } = await import('/browser-store.js?v=16'); await mistakeStore.saveStudy(q, 'note', text);
     }, { q: sample, text });
     await a.context.setOffline(false); await sync(a.page); await b.context.setOffline(false); await sync(b.page); await sync(a.page);
-    const records = await a.page.evaluate(async () => (await import('/browser-store.js?v=14')).mistakeStore.readStudy());
+    const records = await a.page.evaluate(async () => (await import('/browser-store.js?v=16')).mistakeStore.readStudy());
     assert.ok(records[0].revisions.some(edit => edit.value === 'Device A offline revision'));
     assert.ok(records[0].revisions.some(edit => edit.value === 'Device B offline revision'));
     await c.page.goto(origin + '/notebook.html'); await c.page.locator('.flashcard-front').waitFor();
     assert.equal(await c.page.locator('.flashcard-front').textContent(), 'Recall the rule');
     await c.page.locator('.flashcard-answer > summary').click(); assert.equal(await c.page.locator('.flashcard-back').textContent(), 'Rule from the source');
     await c.page.locator('.notebook-note').fill('Unsaved local notebook draft');
-    await a.page.evaluate(async q => { await (await import('/browser-store.js?v=14')).mistakeStore.saveStudy(q, 'note', 'New cloud version while C is writing'); }, sample);
+    await a.page.evaluate(async q => { await (await import('/browser-store.js?v=16')).mistakeStore.saveStudy(q, 'note', 'New cloud version while C is writing'); }, sample);
     await sync(a.page); await sync(c.page);
     assert.equal(await c.page.locator('.notebook-note').inputValue(), 'Unsaved local notebook draft', 'cloud refresh cannot replace an unsaved editor');
     await c.page.locator('[data-save-note]').click(); await c.page.getByText('笔记已保存，登录后自动云同步。', { exact: true }).waitFor(); await sync(c.page);

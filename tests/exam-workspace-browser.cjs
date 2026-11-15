@@ -5,7 +5,7 @@ const origin = process.env.MBE_TEST_ORIGIN || 'http://127.0.0.1:8086';
 const questions = Array.from({ length: 12 }, (_, index) => ({ id: 'workspace-' + index, subject: 'torts',
   stem: 'A landlord offered consideration for a lease. Which rule applies? ' + 'The tenant had agreed to the terms. '.repeat(5),
   choices: ['The agreement is supported by consideration.', 'No contract exists.', 'The tenant owes nothing.', 'The lease is void.'], answer: 'A', explanation: 'Original explanation: A is correct because consideration supports the agreement. B, C and D are incorrect under the stated facts.' }));
-const store = page => page.evaluate(async () => { const { mistakeStore } = await import('/browser-store.js?v=14'); await mistakeStore.ready; return { attempts: mistakeStore.readAttempts(), study: mistakeStore.readStudy(), marks: mistakeStore.readHighlights() }; });
+const store = page => page.evaluate(async () => { const { mistakeStore } = await import('/browser-store.js?v=16'); await mistakeStore.ready; return { attempts: mistakeStore.readAttempts(), study: mistakeStore.readStudy(), marks: mistakeStore.readHighlights() }; });
 async function setup(browser, mobile = false) {
   const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 1050 } });
   await routeBank(context, questions); await context.route('**/cloud-config.json*', r => r.fulfill({ json: {} }));

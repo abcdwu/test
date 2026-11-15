@@ -1,8 +1,12 @@
-import { mistakeStore } from './browser-store.js?v=14';
+import { mistakeStore } from './browser-store.js?v=16';
 import { HIGHLIGHT_PREFIX as PREFIX, mergeRanges, removeRange, mergeHighlights, highlightRanges, highlightChange, cachedHighlight, segmentHitsRect } from './highlight-core.js?v=1';
 export { mergeRanges, removeRange, segmentHitsRect } from './highlight-core.js?v=1';
 const memory = new Map();
 const controllers = new WeakMap();
+function savedHighlights() {
+  try { return { records: new Map(mistakeStore.readHighlights().map(record => [JSON.stringify([record.questionId, record.text]), record])), unavailable: false }; }
+  catch { return { records: new Map(), unavailable: true }; }
+}
 
 function glyphs(state) {
   const nodes = [], walker = document.createTreeWalker(state.stem, NodeFilter.SHOW_TEXT);
@@ -32,11 +36,10 @@ function glyphs(state) {
   });
 }
 
-function read(id, text) {
+function read(id, text, snapshot = savedHighlights()) {
   const records = [];
-  let unavailable = false;
-  try { records.push(...mistakeStore.readHighlights().filter(record => record.questionId === id && record.text === text)); }
-  catch { unavailable = true; }
+  const unavailable = snapshot.unavailable, saved = snapshot.records.get(JSON.stringify([id, text]));
+  if (saved) records.push(saved);
   try {
     const cached = cachedHighlight(id, JSON.parse(localStorage.getItem(PREFIX + id) || 'null'));
     if (cached?.text === text) records.push(cached);
@@ -66,30 +69,32 @@ function paint(state) {
 class Highlighter {
   constructor(root) {
     this.root = root;
+    this.lifecycle = new AbortController();
+    const listen = (target, type, handler, options = {}) => target.addEventListener(type, handler, { ...options, signal: this.lifecycle.signal });
     this.states = [];
     this.pending = null;
     this.penMode = null;
     this.stroke = null;
     this.finger = null;
-    document.addEventListener('selectionchange', () => this.selection());
+    listen(document, 'selectionchange', () => this.selection());
     // Keep the native text selection when a mouse or finger presses the toolbar.
-    root.addEventListener('pointerdown', event => {
+    listen(root, 'pointerdown', event => {
       if (event.target.closest('[data-highlight]')) {
         this.selection(); event.preventDefault(); return;
       }
       this.pointerDown(event);
     });
-    root.addEventListener('pointermove', event => this.pointerMove(event), { passive: false });
-    root.addEventListener('pointerup', event => this.pointerUp(event));
-    root.addEventListener('pointercancel', event => this.pointerCancel(event));
-    root.addEventListener('lostpointercapture', event => this.pointerCancel(event));
-    root.addEventListener('contextmenu', event => {
+    listen(root, 'pointermove', event => this.pointerMove(event), { passive: false });
+    listen(root, 'pointerup', event => this.pointerUp(event));
+    listen(root, 'pointercancel', event => this.pointerCancel(event));
+    listen(root, 'lostpointercapture', event => this.pointerCancel(event));
+    listen(root, 'contextmenu', event => {
       if (this.penMode && this.states.some(state => state.stem.contains(event.target))) event.preventDefault();
     });
-    window.addEventListener('blur', () => this.cancelStroke());
-    window.addEventListener('resize', () => this.cancelStroke());
-    document.addEventListener('visibilitychange', () => { if (document.hidden) this.cancelStroke(); });
-    root.addEventListener('click', event => {
+    listen(window, 'blur', () => this.cancelStroke());
+    listen(window, 'resize', () => this.cancelStroke());
+    listen(document, 'visibilitychange', () => { if (document.hidden) this.cancelStroke(); });
+    listen(root, 'click', event => {
       const button = event.target.closest('[data-highlight]');
       if (!button || button.disabled) return;
       const state = this.states.find(item => item.toolbar.contains(button));
@@ -107,22 +112,27 @@ class Highlighter {
       document.getSelection()?.removeAllRanges();
       this.selection();
     });
-    window.addEventListener('mbe:cloud-synced', () => this.refreshSaved());
-    window.addEventListener('mbe:local-refreshed', () => this.refreshSaved());
-    window.addEventListener('mbe:highlights-changed', () => this.refreshSaved());
-    mistakeStore.ready.then(() => this.refreshSaved());
-    window.addEventListener('storage', event => {
+    listen(window, 'mbe:cloud-synced', () => this.refreshSaved());
+    listen(window, 'mbe:local-refreshed', () => this.refreshSaved());
+    listen(window, 'mbe:highlights-changed', () => this.refreshSaved());
+    mistakeStore.ready.then(() => { if (!this.lifecycle.signal.aborted) this.refreshSaved(); });
+    listen(window, 'storage', event => {
       if (event.key !== null && !event.key.startsWith(PREFIX)) return;
       this.cancelStroke();
+      const snapshot = savedHighlights();
       for (const state of this.states) {
         if (event.key !== null && event.key !== PREFIX + state.id) continue;
         memory.delete(state.id);
-        state.ranges = read(state.id, state.text).ranges;
+        state.ranges = read(state.id, state.text, snapshot).ranges;
         paint(state);
       }
       this.selection();
       mistakeStore.importHighlightCache().then(() => this.refreshSaved()).catch(() => {});
     });
+  }
+
+  destroy() {
+    this.cancelStroke(); this.lifecycle.abort(); this.states = []; this.pending = null;
   }
 
   async save(state, affected, adding) {
@@ -149,9 +159,10 @@ class Highlighter {
   }
 
   refreshSaved() {
+    const snapshot = savedHighlights();
     for (const state of this.states) {
       if (!state.stem.isConnected || this.stroke?.state === state) continue;
-      const stored = read(state.id, state.text);
+      const stored = read(state.id, state.text, snapshot);
       if (JSON.stringify(stored.ranges) !== JSON.stringify(state.ranges)) { state.ranges = stored.ranges; paint(state); }
       state.unavailable = stored.unavailable;
     }
@@ -262,9 +273,10 @@ class Highlighter {
     this.cancelStroke();
     this.root.querySelectorAll('.highlight-tools').forEach(toolbar => toolbar.remove());
     this.pending = null;
+    const snapshot = savedHighlights();
     this.states = [...this.root.querySelectorAll('.question[data-question-id],.choice-text[data-question-id]')].map(stem => {
       const text = stem.textContent, id = stem.dataset.questionId;
-      const stored = read(id, text);
+      const stored = read(id, text, snapshot);
       const toolbar = document.createElement('div');
       toolbar.className = 'highlight-tools';
       if (stem.classList.contains('choice-text')) toolbar.classList.add('choice-highlight-tools');
@@ -291,5 +303,12 @@ class Highlighter {
 
 export function mountHighlights(root) {
   if (!controllers.has(root)) controllers.set(root, new Highlighter(root));
+  root.setAttribute('data-mbe-highlighter', '');
   controllers.get(root).mount();
+}
+
+export function unmountHighlights(root) {
+  for (const target of [root, ...root.querySelectorAll('[data-mbe-highlighter]')]) {
+    controllers.get(target)?.destroy(); controllers.delete(target); target.removeAttribute('data-mbe-highlighter');
+  }
 }
