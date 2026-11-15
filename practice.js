@@ -9,7 +9,7 @@ import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-s
 import { downloadBackup } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
 import './cloud-sync.js?v=15';
-import { accuracy, createAttempt, summarizeAttempts, orderedPractice, historyMarkup } from './progress.js?v=15';
+import { accuracy, createAttempt, summarizeAttempts, orderedPractice, historyMarkup } from './progress.js?v=16';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
