@@ -43,7 +43,7 @@ export function mergeEntry(previous, incoming) {
   const left = counts(previous), right = counts(incoming);
   const deviceCounts = { ...left.deviceCounts };
   for (const [device, count] of Object.entries(right.deviceCounts)) {
-    deviceCounts[device] = Math.max(deviceCounts[device] ?? 0, count);
+    deviceCounts[device] = Math.max(Object.hasOwn(deviceCounts, device) ? deviceCounts[device] : 0, count);
   }
   const legacyCount = Math.max(left.legacyCount, right.legacyCount);
   const latest = Date.parse(incoming.lastWrongAt) > Date.parse(previous.lastWrongAt) ? incoming : previous;
@@ -165,7 +165,7 @@ export class MistakeStore {
       const previous = entries.get(question.id);
       const { legacyCount, deviceCounts: oldCounts } = previous ? counts(previous) : { legacyCount: 0, deviceCounts: {} };
       const counter = contribution || device;
-      const deviceCounts = { ...oldCounts, [counter]: (oldCounts[counter] ?? 0) + 1 };
+      const deviceCounts = { ...oldCounts, [counter]: (Object.hasOwn(oldCounts, counter) ? oldCounts[counter] : 0) + 1 };
       entries.set(question.id, {
         question, lastAnswer: selected, wrongCount: (previous?.wrongCount ?? 0) + 1,
         legacyCount, deviceCounts,

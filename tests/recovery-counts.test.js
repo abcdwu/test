@@ -20,3 +20,8 @@ test('per-session contributions preserve existing device-based and legacy wrong 
   receiving.merge(existing.read()); receiving.merge(existing.read()); assert.equal(receiving.read()[0].wrongCount, 3);
   const before = receiving.read()[0]; assert.equal(before.deviceCounts[attempt.id], 1); assert.equal(Object.values(before.deviceCounts).reduce((a, b) => a + b, 0), 3);
 });
+test('valid session identifiers matching object property names count and merge normally', () => {
+  const source = store(), target = store();
+  for (const id of ['constructor', 'toString', 'valueOf']) source.recordSession([q], [1], createAttempt([q], [1], id));
+  target.merge(source.read()); target.merge(source.read()); assert.equal(target.read()[0].wrongCount, 3);
+});
