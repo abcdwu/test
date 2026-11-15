@@ -1,5 +1,5 @@
 import { cachedHighlights } from './highlight-core.js?v=1';
-import { MistakeStore, STORAGE_KEY } from './mistake-store.js?v=14';
+import { MistakeStore, STORAGE_KEY } from './mistake-store.js?v=16';
 
 // IndexedDB can retain the full question bank without localStorage's small quota.
 // Each mutation reads and writes in one transaction to preserve edits from tabs.

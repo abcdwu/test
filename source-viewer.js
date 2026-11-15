@@ -1,4 +1,4 @@
-import { SUBJECTS, esc } from './common.js?v=10';
+import { SUBJECTS, esc } from './common.js?v=11';
 import { mountSourcePages } from './pdf-source.js?v=4';
 import './word-translation.js?v=2';
 const app = document.getElementById('source-app'), params = new URLSearchParams(location.search);

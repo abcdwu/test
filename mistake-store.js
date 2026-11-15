@@ -154,7 +154,7 @@ export class MistakeStore {
     return updated;
   }
 
-  recordEntries(questions, answers, now) {
+  recordEntries(questions, answers, now, contribution = null) {
     const entries = new Map(this.read().map(entry => [entry.question.id, entry]));
     let device = this.storage.getItem(DEVICE_KEY);
     if (!device) { device = crypto.randomUUID(); this.storage.setItem(DEVICE_KEY, device); }
@@ -164,7 +164,8 @@ export class MistakeStore {
       if (selected === question.answer) continue;
       const previous = entries.get(question.id);
       const { legacyCount, deviceCounts: oldCounts } = previous ? counts(previous) : { legacyCount: 0, deviceCounts: {} };
-      const deviceCounts = { ...oldCounts, [device]: (oldCounts[device] ?? 0) + 1 };
+      const counter = contribution || device;
+      const deviceCounts = { ...oldCounts, [counter]: (oldCounts[counter] ?? 0) + 1 };
       entries.set(question.id, {
         question, lastAnswer: selected, wrongCount: (previous?.wrongCount ?? 0) + 1,
         legacyCount, deviceCounts,
@@ -188,7 +189,9 @@ export class MistakeStore {
     const previous = this.readAttempts();
     const merged = mergeAttempts(previous, [attempt]);
     if (merged.length === previous.length) return questions.filter((question, index) => answerLetter(answers[index]) !== question.answer).length;
-    const result = this.recordEntries(questions, answers, attempt.completedAt);
+    // A completed session contributes once even when its emergency backup is
+    // restored on another device before the original save is retried.
+    const result = this.recordEntries(questions, answers, attempt.completedAt, attempt.id);
     this.write(result.entries, merged); return result.added;
   }
 

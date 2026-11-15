@@ -1,14 +1,14 @@
 import './word-translation.js?v=2';
-import { mountHighlights } from './highlights.js?v=4';
-import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
+import { mountHighlights } from './highlights.js?v=5';
+import { studyTools, mountStudyTools, flushStudyNotes, backupStudyDrafts } from './study-ui.js?v=2';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, explanationContent, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
-} from './common.js?v=10';
+} from './common.js?v=11';
 import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=4';
-import { downloadBackup } from './mistake-store.js?v=14';
-import { mistakeStore } from './browser-store.js?v=14';
-import './cloud-sync.js?v=14';
+import { downloadBackup } from './mistake-store.js?v=16';
+import { mistakeStore } from './browser-store.js?v=16';
+import './cloud-sync.js?v=16';
 import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=14';
 
 const app = document.getElementById('app');
@@ -124,6 +124,7 @@ async function loadInlineHistory(target) {
 }
 
 async function showHistoryAttempt(id) {
+  if (!canLeaveResults()) return;
   if (!await flushStudyNotes(app, [...knownQuestions.values()])) return;
   const token = ++startToken;
   reviewing = true; preparing = false;
@@ -247,6 +248,7 @@ function home() {
   });
   document.getElementById('start').addEventListener('click', start);
   mountHistory();
+  mountHighlights(app);
 }
 
 async function start() {
@@ -432,6 +434,7 @@ async function submitQuiz(automatic = false) {
 }
 
 function results(automatic, saved) {
+  session.submitting = false; session.saveFailed = saved === null;
   document.body.classList.remove('exam-session');
   unmountSourcePages(app);
   const { questions, answers, timer } = session;
@@ -466,23 +469,26 @@ function results(automatic, saved) {
     let visible = 0; for (const result of app.querySelectorAll('[data-result-index]')) { result.hidden = event.target.value === 'wrong' ? result.dataset.wrong !== 'true' : event.target.value === 'flagged' ? result.dataset.flagged !== 'true' : false; if (!result.hidden) visible++; }
     document.getElementById('report-count').textContent = `显示 ${visible} / ${questions.length} 题`;
   });
-  document.getElementById('again').addEventListener('click', async () => { if (await flushStudyNotes(app, questions)) { home(); window.scrollTo(0, 0); } });
+  document.getElementById('again').addEventListener('click', async () => { if (canLeaveResults() && await flushStudyNotes(app, questions)) { home(); window.scrollTo(0, 0); } });
   document.getElementById('retry-save')?.addEventListener('click', async event => {
     event.target.disabled = true;
+    if (!await flushStudyNotes(app, questions)) { event.target.disabled = false; return; }
     let retried;
     try { retried = await mistakeStore.recordSession(questions, answers, session.attempt); }
     catch { retried = null; }
     results(automatic, retried);
   });
   document.getElementById('save-backup')?.addEventListener('click', () => {
-    const timestamp = new Date().toISOString();
+    const timestamp = session.attempt.completedAt;
     const entries = questions.flatMap((question, index) => answerLetter(answers[index]) === question.answer ? [] : [{
       question, lastAnswer: answerLetter(answers[index]), wrongCount: 1,
+      legacyCount: 0, deviceCounts: { [session.attempt.id]: 1 },
       firstWrongAt: timestamp, lastWrongAt: timestamp,
     }]);
-    let highlights = [];
+    let highlights = [], study = [];
     try { highlights = mistakeStore.readHighlights(); } catch { /* Still allow the current unsaved attempt to be backed up. */ }
-    downloadBackup(entries, [session.attempt], highlights, mistakeStore.readStudy());
+    try { study = mistakeStore.readStudy(); } catch { /* Private storage failure must not prevent emergency export. */ }
+    downloadBackup(entries, [session.attempt], highlights, backupStudyDrafts(app, questions, study));
   });
   mountHistory();
   mountHighlights(app);
@@ -493,8 +499,11 @@ function results(automatic, saved) {
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden) updateClock(); });
 window.addEventListener('beforeunload', event => {
-  if (session && !session.submitted) { event.preventDefault(); event.returnValue = ''; }
+  if (session && (!session.submitted || session.submitting || session.saveFailed)) { event.preventDefault(); event.returnValue = ''; }
 });
+function canLeaveResults() {
+  return !session?.saveFailed || confirm('本次练习尚未保存，离开会丢失本次成绩。建议先重试保存或下载本次备份。确定离开吗？');
+}
 
 function dataChanged() { if (reviewing) return; if (session || preparing) updateCumulative(); else if (catalog || fromMistakes && storeReady) home(); }
 window.addEventListener('mbe:cloud-synced', dataChanged);
