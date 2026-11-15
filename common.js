@@ -86,7 +86,9 @@ function originalPages(question, kind) {
 
 export function sourcePageUrl(question, kind = 'question', page = null) {
   const pages = sourcePages(question, kind);
-  return 'source.html?' + new URLSearchParams({ subject: question.subject, pages: pages.join(','), focus: String(page && pages.includes(page) ? page : pages[0]) }).toString();
+  // Classification can differ from the PDF that actually contains the question.
+  const pdfSubject = /^sources\/([a-z0-9-]+)\.pdf$/.exec(question.source?.pdfPath ?? '')?.[1];
+  return 'source.html?' + new URLSearchParams({ subject: pdfSubject || question.subject, pages: pages.join(','), focus: String(page && pages.includes(page) ? page : pages[0]) }).toString();
 }
 
 // This helper deliberately reads questionPages only: quiz markup must not include answer pages.
@@ -99,7 +101,11 @@ export function questionSource(question) {
 }
 
 export function reviewQuestion(question, selected) {
-  return `<p class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</p>
+  const sourceLinks = [['question', '原题'], ['explanation', '解析']].map(([kind, label]) => {
+    const pages = sourcePages(question, kind);
+    return pages.length ? `<a class="text-link" href="${esc(sourcePageUrl(question, kind))}" target="_blank" rel="noopener">查看${label} PDF · 第 ${pages.join('、')} 页 ↗</a>` : '';
+  }).filter(Boolean).join('　　');
+  return `${sourceLinks ? `<p class="source-quick-links"><strong>原文定位：</strong> ${sourceLinks}</p>` : ''}<p class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</p>
     <div class="result-options">${question.choices.map((choice, index) => {
       const letter = 'ABCD'[index];
       return `<div class="ro ${letter === question.answer ? 'correct' : selected === letter ? 'wrong' : ''}">
