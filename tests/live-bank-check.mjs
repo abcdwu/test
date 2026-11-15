@@ -15,7 +15,13 @@ async function get(base, path) {
   assert.equal(response.status, 200, 'Public deployment asset must be available');
   return Buffer.from(await response.arrayBuffer());
 }
-for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.dev/']) {
+const target = process.env.MBE_PUBLIC_TARGET || 'both';
+assert.ok(['primary', 'fly', 'both'].includes(target), 'Invalid verification target');
+const origins = {
+  primary: 'https://test.chaoxu.me/',
+  fly: 'https://abcdwu-mbe-mistakes.fly.dev/',
+};
+for (const base of (target === 'both' ? Object.values(origins) : [origins[target]])) {
   let failure;
   for (let attempt = 0; attempt < 24; attempt++) {
     try {
@@ -24,7 +30,7 @@ for (const base of ['https://test.chaoxu.me/', 'https://abcdwu-mbe-mistakes.fly.
       assert.equal(digest(await get(base, entry)), digest(entryBytes), 'Latest entry contents must be published');
       const highlightEntry = /from '\.\/(highlights\.js\?v=\d+)'/.exec(entryBytes.toString())[1];
       assert.equal(digest(await get(base, highlightEntry)), digest(readFileSync(new URL('../highlights.js', import.meta.url))), 'Highlight controls must be published');
-      for (const file of ['progress.js', 'cloud-sync.js', 'browser-store.js', 'mistake-store.js', 'highlight-core.js', 'common.js', 'pdf-source.js', 'public-assets.js', 'source-chunks.js', 'source-viewer.js', 'source.html', 'word-translation.js', 'notebook.html', 'notebook.js', 'study-core.js', 'study-ui.js']) {
+      for (const file of ['progress.js', 'cloud-sync.js', 'browser-store.js', 'mistake-store.js', 'highlight-core.js', 'common.js', 'pdf-source.js', 'public-assets.js', 'source-chunks.js', 'source-viewer.js', 'source.html', 'word-translation.js', 'question-translation.js', 'notebook.html', 'notebook.js', 'study-core.js', 'study-ui.js']) {
         assert.equal(digest(await get(base, file)), digest(readFileSync(new URL('../' + file, import.meta.url))), 'Practice history and sync modules must be published');
       }
       const catalog = JSON.parse((await get(base, 'bank/manifest.json')).toString());
