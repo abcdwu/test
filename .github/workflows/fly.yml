@@ -41,6 +41,10 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
         run: python3 scripts/deploy_fly.py
+      - name: Verify Fly static assets and bank are the same Git revision
+        run: node tests/live-bank-check.mjs
+        env:
+          MBE_PUBLIC_TARGET: fly
       - name: Check two independent sessions on the live sync API (read-only)
         env:
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
