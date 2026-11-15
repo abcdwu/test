@@ -8,6 +8,14 @@ on:
       - server/**
       - bank/**
       - bank-loader.js
+      - common.js
+      - practice.js
+      - mistakes.js
+      - browser-store.js
+      - cloud-sync.js
+      - index.html
+      - mistakes.html
+      - styles.css
       - highlights.js
       - highlight-core.js
       - pdf-source.js
