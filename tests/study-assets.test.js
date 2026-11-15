@@ -40,6 +40,26 @@ test('source links open the exact question pages in the dedicated viewer', () =>
   assert.equal(new URL(sourcePageUrl(q, 'explanation', 203), url).searchParams.get('pages'), '203,204');
 });
 
+test('review links use the actual PDF source and show exact question and explanation pages', async () => {
+  const { reviewQuestion } = await import('../common.js');
+  const question = {
+    id: 'cross-file-test', subject: 'criminal-law', stem: 'Question?', choices: ['A', 'B', 'C', 'D'],
+    answer: 'A', explanation: 'Explanation',
+    source: { pdfPath: 'sources/criminal-procedure.pdf', questionNumber: 1,
+      questionPages: [17, 18], explanationPages: [19, 20] },
+  };
+  const questionUrl = new URL(sourcePageUrl(question), 'https://test.invalid/');
+  const explanationUrl = new URL(sourcePageUrl(question, 'explanation'), 'https://test.invalid/');
+  assert.equal(questionUrl.searchParams.get('subject'), 'criminal-procedure');
+  assert.equal(questionUrl.searchParams.get('pages'), '17,18');
+  assert.equal(explanationUrl.searchParams.get('subject'), 'criminal-procedure');
+  assert.equal(explanationUrl.searchParams.get('pages'), '19,20');
+  const markup = reviewQuestion(question, null);
+  assert.match(markup, /查看原题 PDF · 第 17、18 页/);
+  assert.match(markup, /查看解析 PDF · 第 19、20 页/);
+  assert.match(markup, /source-quick-links/);
+});
+
 test('public assets reject corrupt cache data and use a working mirror when the primary stalls', async () => {
   const body = new TextEncoder().encode('verified payload'), info = { sha256: hash(body), bytes: body.length };
   let cancelled = 0, mirror = 0;
