@@ -1,4 +1,5 @@
 import { answerLetter, SUBJECTS, esc, formatTime, subjectLabel } from './common.js?v=8';
+// Keep the primary site and Fly backup on the same practice-history sync release.
 
 const subjects = new Set(SUBJECTS.map(subject => subject.id));
 const count = value => Number.isSafeInteger(value) && value >= 0;
