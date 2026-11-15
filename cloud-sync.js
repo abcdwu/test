@@ -1,6 +1,7 @@
 import { esc } from './common.js?v=3';
 import { mistakeStore } from './browser-store.js?v=14';
 import { highlightKey } from './highlight-core.js?v=1';
+import { sameAttempt } from './progress.js?v=14';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';
 const panel = document.getElementById('sync-panel');
@@ -8,18 +9,41 @@ let apiBase = '', session = null, queued = false, merging = false;
 let status = '错题、记录、高亮、笔记与闪卡自动保存在当前浏览器。', showLogin = false;
 let remoteRevision = null;
 let runningSync = null;
+let verificationRequested = false;
+let verifiedAttempts = null; // Exact full server snapshot; null means not yet verified.
 const uploaded = new Map();
 const uploadedAttempts = new Map();
 const uploadedHighlights = new Map();
 const uploadedStudy = new Map();
 
-function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); uploadedHighlights.clear(); uploadedStudy.clear(); }
+function resetSync() {
+  remoteRevision = null;
+  verificationRequested = false;
+  verifiedAttempts = null;
+  uploaded.clear(); uploadedAttempts.clear(); uploadedHighlights.clear(); uploadedStudy.clear();
+}
+
+function recordStatus() {
+  let local;
+  try { local = mistakeStore.readAttempts(); } catch { return '本机练习记录暂时无法读取。'; }
+  if (!session) return `本机 ${local.length} 次练习记录 · 尚未登录云端`;
+  if (!verifiedAttempts) return `本机 ${local.length} 次练习记录 · 等待云端核对`;
+  const pending = local.filter(attempt => {
+    const remote = verifiedAttempts.get(attempt.id);
+    return !remote || !sameAttempt(remote, attempt);
+  }).length;
+  return pending
+    ? `本机 ${local.length} 次练习记录 · 云端已核对 ${verifiedAttempts.size} 次，其中 ${pending} 次尚未确认`
+    : `本机 ${local.length} 次练习记录 · 云端已核对 ${verifiedAttempts.size} 次`;
+}
 
 function render() {
   if (!panel) return;
   panel.innerHTML = `<section class="sync-panel" aria-label="错题保存状态">
     <div class="sync-summary"><span role="status">${esc(status)}</span>
       ${apiBase ? `<button class="link" id="sync-toggle">${session ? '退出云同步' : '登录云同步'}</button>` : ''}</div>
+    <p class="note" id="sync-record-count" role="status">${esc(recordStatus())}</p>
+    ${apiBase && session ? '<button class="secondary" type="button" id="sync-verify">核对云端练习记录</button>' : ''}
     ${apiBase && !session && showLogin ? `<form id="cloud-login" class="cloud-login">
       <label for="cloud-password">私人密码</label>
       <input id="cloud-password" type="password" autocomplete="current-password" required maxlength="512" placeholder="输入密码后自动同步错题">
@@ -27,6 +51,7 @@ function render() {
       <p class="foot">无需邮箱。此设备记住登录 30 天，之后重新输入密码即可。</p>
     </form>` : ''}
   </section>`;
+  document.getElementById('sync-verify')?.addEventListener('click', () => sync({ verify: true }));
   document.getElementById('sync-toggle')?.addEventListener('click', async () => {
     if (!session) { showLogin = !showLogin; render(); document.getElementById('cloud-password')?.focus(); return; }
     const token = session.token;
@@ -67,15 +92,21 @@ async function api(path, { method = 'POST', body, token = session?.token } = {})
   return response.json();
 }
 
-export function sync() {
+export function sync(options = null) {
   if (!apiBase || !session) return Promise.resolve();
+  if (options?.verify === true) verificationRequested = true;
   if (runningSync) { queued = true; return runningSync; }
   runningSync = (async () => {
-    do { queued = false; await syncPass(); } while (queued && apiBase && session);
+    do {
+      const verify = verificationRequested;
+      verificationRequested = false;
+      queued = false;
+      await syncPass(verify);
+    } while (queued && apiBase && session);
   })().finally(() => { runningSync = null; });
   return runningSync;
 }
-async function syncPass() {
+async function syncPass(verify = false) {
   const activeSession = session;
   status = '正在自动同步数据…'; render();
   try {
@@ -84,7 +115,9 @@ async function syncPass() {
     const attempts = mistakeStore.readAttempts().filter(attempt => uploadedAttempts.get(attempt.id) !== JSON.stringify(attempt));
     const highlights = mistakeStore.readHighlights().filter(record => uploadedHighlights.get(highlightKey(record)) !== JSON.stringify(record));
     const study = mistakeStore.readStudy().filter(record => uploadedStudy.get(record.questionId) !== JSON.stringify(record));
-    const result = await api('/api/sync', { body: { entries: outgoing, attempts, highlights, study, revision: remoteRevision } });
+    // A forced check requests the complete server snapshot, even if its revision did not change.
+    const requestedRevision = verify ? null : remoteRevision;
+    const result = await api('/api/sync', { body: { entries: outgoing, attempts, highlights, study, revision: requestedRevision } });
     if (session !== activeSession) return;
     merging = true;
     const before = JSON.stringify(mistakeStore.read());
@@ -94,6 +127,9 @@ async function syncPass() {
     if (Array.isArray(result.attempts)) {
       await mistakeStore.mergeAttempts(result.attempts);
       for (const attempt of [...attempts, ...result.attempts]) uploadedAttempts.set(attempt.id, JSON.stringify(attempt));
+      if (requestedRevision === null || requestedRevision !== result.revision) {
+        verifiedAttempts = new Map(result.attempts.map(attempt => [attempt.id, attempt]));
+      }
     }
     if (Array.isArray(result.highlights)) {
       await mistakeStore.mergeHighlights(result.highlights);
@@ -106,10 +142,19 @@ async function syncPass() {
     for (const entry of [...outgoing, ...result.entries]) uploaded.set(entry.question.id, JSON.stringify(entry));
     remoteRevision = result.revision;
     merging = false;
-    status = `错题已自动同步（含记录、高亮、笔记与闪卡） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    const localAttempts = mistakeStore.readAttempts();
+    const pending = verifiedAttempts
+      ? localAttempts.filter(attempt => {
+          const remote = verifiedAttempts.get(attempt.id);
+          return !remote || !sameAttempt(remote, attempt);
+        }).length
+      : localAttempts.length;
+    status = verifiedAttempts && !pending
+      ? `云端练习记录已核对（${verifiedAttempts.size} 次） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`
+      : `本机保存了 ${localAttempts.length} 次练习，其中 ${pending} 次尚未得到云端确认，请点击“核对云端练习记录”。`;
+    if (!Array.isArray(result.attempts)) status = '云端尚未提供练习记录数据，不能确认跨设备同步；本机记录仍保留。';
     if (study.length && !Array.isArray(result.study)) status = '笔记与闪卡已保存在本机，服务更新后会自动补传。';
     if (highlights.length && !Array.isArray(result.highlights)) status = '错题已同步，高亮暂仅保存在本机，服务更新后会自动补传。';
-    if (attempts.length && !Array.isArray(result.attempts)) status = '错题已同步，累计统计暂仅保存在本机，服务更新后会自动补传。';
     if (JSON.stringify(mistakeStore.readHighlights()) !== beforeHighlights) window.dispatchEvent(new Event('mbe:highlights-changed'));
     if (JSON.stringify(mistakeStore.read()) !== before || JSON.stringify(mistakeStore.readAttempts()) !== beforeAttempts) window.dispatchEvent(new Event('mbe:cloud-synced'));
   } catch (error) {
@@ -125,7 +170,7 @@ async function syncPass() {
 }
 
 window.addEventListener('mbe:mistakes-changed', () => { if (!merging) sync(); });
-window.addEventListener('online', sync);
+window.addEventListener('online', () => sync());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
 window.addEventListener('storage', event => {
   if (event.key === SESSION_KEY || event.key === null) {
