@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MistakeStore, backupText } from '../mistake-store.js';
-import { createAttempt, mergeAttempts, validateAttempts, remainingPool, roundProgress, historyMarkup } from '../progress.js';
+import { createAttempt, mergeAttempts, validateAttempts, remainingPool, roundProgress, orderQuestionsBySource, historyMarkup } from '../progress.js';
 const startedAt = '2026-11-11T08:00:00Z', completedAt = '2026-11-11T08:02:03Z';
 const qs = Array.from({ length: 12 }, (_, i) => ({ id: `torts-${i}`, subject: 'torts', stem: `Stem ${i}`,
   choices: ['A', 'B', 'C', 'D'], answer: 'A', explanation: 'Explanation' }));
@@ -60,6 +60,30 @@ test('mixed practice shares subject progress, completed subjects wait, and wrong
   // Historic totals have no question IDs; they remain visible without inventing exclusions.
   const legacy = createAttempt(qs, Array(12).fill(0), 'old', completedAt);
   assert.deepEqual(remainingPool(qs, [legacy]).questions, qs);
+});
+
+test('every subject uses descending original PDF question numbers without randomization and skips completed questions', () => {
+  const source = (subject, number, suffix = '') => ({
+    id: `${subject}-${number}${suffix}`, subject, source: {
+      questionNumber: number, pdfPath: `sources/${subject}.pdf`,
+    },
+    stem: 'Test', choices: ['A', 'B', 'C', 'D'], answer: 'A', explanation: 'Explanation',
+  });
+  const input = [source('torts', 2), source('contracts', 1), source('torts', 229),
+    source('torts', 100), source('contracts', 273), source('torts', 228)];
+  assert.deepEqual(orderQuestionsBySource(input).map(q => q.id),
+    ['contracts-273', 'contracts-1', 'torts-229', 'torts-228', 'torts-100', 'torts-2']);
+  assert.deepEqual(orderQuestionsBySource([...input].reverse()).map(q => q.id),
+    orderQuestionsBySource(input).map(q => q.id), 'input order must not affect output');
+  const completed = attempt([input[2]], [0], 'done');
+  const remaining = remainingPool(input, [completed]);
+  assert.deepEqual(orderQuestionsBySource(remaining.questions).filter(q => q.subject === 'torts').map(q => q.source.questionNumber),
+    [228, 100, 2], 'previously completed 229 is skipped without reshuffling');
+  assert.equal(orderQuestionsBySource(input)[0].id, 'contracts-273');
+  assert.deepEqual(input.map(q => q.source.questionNumber), [2, 1, 229, 100, 273, 228],
+    'sorting must not mutate the original question bank');
+  assert.deepEqual(orderQuestionsBySource([source('torts', 5), source('torts', 5, '-other')]).map(q => q.id),
+    ['torts-5', 'torts-5-other'], 'same-number ties use a stable ID');
 });
 
 test('malformed detail records and results that disagree with answers are rejected atomically', () => {
