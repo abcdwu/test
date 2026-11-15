@@ -1,5 +1,5 @@
 // Original pages are rendered locally. No third-party scripts or document services are used.
-import { sourceChunk } from './source-chunks.js?v=1';
+import { sourceChunk, sourceChunkLocation } from './source-chunks.js?v=2';
 const mounts = new WeakMap();
 const documents = new Map();
 const DOCUMENT_CACHE_LIMIT = 2;
@@ -178,7 +178,19 @@ export function mountSourcePages(container) {
       }
       model.state = 'error';
       model.surface.classList.add('pdf-page-error');
-      model.status.replaceChildren(document.createTextNode('页面暂未载入，可使用上方“打开原始 PDF”查看。'));
+      model.status.replaceChildren(document.createTextNode('原页渲染失败，建议使用 Safari 原生 PDF 打开。'));
+      // The native link bypasses PDF.js entirely, including broken workers on iPadOS.
+      const native = document.createElement('a');
+      native.className = 'text-link pdf-native-fallback';
+      native.target = '_blank'; native.rel = 'noopener';
+      native.href = new URL(model.path + '#page=' + model.pageNumber, document.baseURI).href;
+      native.textContent = '打开原始 PDF ↗';
+      model.status.append(document.createElement('p')).append(native);
+      sourceChunkLocation(model.path, model.pageNumber).then(chunk => {
+        if (!valid(model, token)) return;
+        native.href = new URL(chunk.path + '#page=' + chunk.pageNumber, document.baseURI).href;
+        native.textContent = 'Safari 原生 PDF · 分段第 ' + chunk.pageNumber + ' 页 ↗';
+      }).catch(() => {});
       const retry = document.createElement('button');
       retry.type = 'button';
       retry.className = 'secondary pdf-page-retry';
