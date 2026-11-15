@@ -9,13 +9,13 @@ import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-s
 import { downloadBackup } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
 import './cloud-sync.js?v=15';
-import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, orderQuestionsBySource, historyMarkup } from './progress.js?v=15';
+import { accuracy, createAttempt, summarizeAttempts, orderedPractice, historyMarkup } from './progress.js?v=15';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
 let subject = params.get('subject') === 'all' || SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : null;
-let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
+let bank = [], count = 10, startPosition = 1, mode = 'natural', session = null, ticker = null;
 let studyMode = 'exam', showTimer = true;
 let historyLimit = 20;
 let reviewing = false;
@@ -177,15 +177,9 @@ function home() {
   const counts = !fromMistakes && catalog ? Object.fromEntries(Object.entries(catalog.subjects).map(([key, item]) => [key, item.count])) : null;
   if (subject === null) subject = fromMistakes ? 'all' : SUBJECTS.find(item => counts?.[item.id] > 0)?.id || 'all';
   const available = counts ? (subject === 'all' ? catalog.total : counts[subject]) : filterSubject(questions, subject).length;
-  const selectedCounts = counts ? Object.fromEntries(Object.entries(counts).filter(([key]) => subject === 'all' || key === subject))
-    : Object.fromEntries(SUBJECTS.filter(item => subject === 'all' || item.id === subject).map(item => [item.id, questions.filter(question => question.subject === item.id).length]));
-  const progress = roundProgress(attempts, selectedCounts, practiceSource);
-  const nextRound = available > 0 && progress.remaining === 0;
-  const remaining = nextRound ? available : progress.remaining;
+  const remaining = Math.max(0, available - (startPosition - 1));
   const actualCount = Math.min(count, remaining);
-  const round = subject === 'all' ? null : progress.bySubject[subject]?.round || 1;
-  const roundMessage = nextRound ? `本轮 ${available} 题已完成，下次练习开始${round ? `第 ${round + 1} 轮` : '各科新一轮'}。`
-    : `${round ? `第 ${round} 轮 · ` : '各科本轮合计 · '}已做 ${progress.completed} / ${available} 题，剩余 ${progress.remaining} 题。`;
+  const roundMessage = `共 ${available} 道题 · 按 PDF 原题号倒序 · 做过的题目也可再次练习。`;
   app.innerHTML = `<div class="eyebrow">${fromMistakes ? 'Review & grow' : 'A little progress, every day'}</div>
     <h1>${fromMistakes ? '重温错题，<br>巩固理解。' : '专注练习，<br>从容备考。'}</h1>
     <p class="sub">按原 PDF 题号倒序练习，交卷后查看完整解析。<br>错题会自动收录到独立错题本。</p>
@@ -198,6 +192,9 @@ function home() {
       <select id="subject">${subjectOptions(subject, questions, counts)}</select>
       ${!fromMistakes ? '<p class="note">按科目练习准备更快；混合练习首次需准备全部科目。</p>' : ''}
       <p class="notice round-progress" id="round-progress">${roundMessage}</p>
+       <label class="label spaced" for="start-position">从倒序第几题开始？</label>
+       <input id="start-position" type="number" min="1" max="${Math.max(1, available)}" step="1" inputmode="numeric" value="${startPosition}">
+       <p class="note">默认第 1 题为原 PDF 最高题号。做完前 10 题后，可将这里改为 11 继续核对。</p>
       <div class="label spaced" id="count-label">这次想做多少题？</div>
       <div class="counts" role="group" aria-labelledby="count-label">${[5, 10, 15, 20].map(number => `
         <button class="count ${number === count ? 'active' : ''}" data-count="${number}" aria-pressed="${number === count}">${number} 题</button>`).join('')}</div>
@@ -215,25 +212,32 @@ function home() {
       <p class="sub timing-hint">${mode === 'countdown'
         ? `${actualCount} 题 × 1.8 分钟 = ${formatTime(actualCount * 108)}，时间到自动交卷。`
         : '记录本次练习的用时，没有时间限制。'}</p>
-      <p id="count-note" class="notice" ${remaining && remaining < count ? '' : 'hidden'}>本轮剩余 ${remaining} 道题，本次将练习这 ${remaining} 题，不混入下一轮。</p>
-      <button class="primary" id="start" ${!available || !storeReady || storageError ? 'disabled' : ''}>${nextRound ? '开始下一轮' : '开始'}${fromMistakes ? '错题' : ''}练习　→</button>
+      <p id="count-note" class="notice" ${remaining && remaining < count ? '' : 'hidden'}>从起始位置到末尾还有 ${remaining} 道题，本次最多练习 ${remaining} 题。</p>
+      <button class="primary" id="start" ${!remaining || !storeReady || storageError ? 'disabled' : ''}>开始${fromMistakes ? '错题' : ''}练习　→</button>
       <p class="notice error" id="bank-status" role="alert" hidden></p>
-      <p class="note">交卷后记录已做题，本轮内不重复；未交卷退出不消耗题目。</p>
+      <p class="note">所有题目始终可重复练习，不因历史作答跳过；交卷后照常保存成绩、错题。</p>
       <p class="note">${available ? `原题号倒序 · 当前科目共 ${available} 道题` : fromMistakes ? '当前科目暂无错题，完成练习后会自动收录。' : '当前科目暂无题目。'}</p>
     </section>
     <p class="foot">八科分开练习：民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法、侵权法。<br>错题在本机自动保存；登录云同步后可跨设备查看。清理浏览器前请确认同步完成。</p>`;
-  document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; home(); });
+  document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; startPosition = 1; home(); });
   document.getElementById('study-mode').addEventListener('change', event => { studyMode = event.target.value; mode = studyMode === 'tutor' ? 'natural' : 'countdown'; home(); });
   document.getElementById('timer-mode').addEventListener('change', event => { mode = event.target.value; home(); });
   app.querySelectorAll('[data-count]').forEach(button => button.addEventListener('click', () => {
     count = Number(button.dataset.count); home();
   }));
+  const startInput = document.getElementById('start-position');
+  startInput.addEventListener('change', () => {
+    const value = Number(startInput.value), valid = startInput.value.trim() !== '' && Number.isSafeInteger(value) && value >= 1 && value <= available;
+    startInput.setCustomValidity(valid ? '' : `请输入 1 至 ${available} 之间的整数。`);
+    if (!valid) { startInput.reportValidity(); return; }
+    startPosition = value; home();
+  });
   const customCount = document.getElementById('question-count');
   customCount.addEventListener('input', () => {
     const value = Number(customCount.value), valid = customCount.value.trim() !== '' && Number.isSafeInteger(value) && value > 0;
     customCount.setCustomValidity(valid ? '' : '请输入大于 0 的整数。');
     document.getElementById('count-error').hidden = valid;
-    document.getElementById('start').disabled = !valid || !available || !storeReady || storageError;
+    document.getElementById('start').disabled = !valid || !remaining || !storeReady || storageError;
     if (!valid) return;
     count = value;
     app.querySelectorAll('[data-count]').forEach(button => {
@@ -255,6 +259,12 @@ async function start() {
     requestedCount.setCustomValidity('请输入大于 0 的整数。'); requestedCount.reportValidity(); return;
   }
   if (requestedCount) count = Number(requestedCount.value);
+  const positionInput = document.getElementById('start-position');
+  const position = Number(positionInput.value);
+  if (positionInput.value.trim() === '' || !Number.isSafeInteger(position) || position < 1 || position > Number(positionInput.max)) {
+    positionInput.setCustomValidity('请输入有效的起始位置。'); positionInput.reportValidity(); return;
+  }
+  startPosition = position;
   const token = ++startToken;
   const selectedSubject = subject;
   const button = document.getElementById('start');
@@ -280,8 +290,9 @@ async function start() {
       }
     }
     if (token !== startToken) return;
-    roundSelection = remainingPool(availableQuestions(), mistakeStore.readAttempts(), practiceSource);
-    questions = orderQuestionsBySource(roundSelection.questions).slice(0, count);
+    questions = orderedPractice(availableQuestions(), startPosition, count);
+    // Preserve stored attempt schema without using history to remove questions.
+    roundSelection = { rounds: Object.fromEntries([...new Set(questions.map(question => question.subject))].map(key => [key, 1])) };
   } catch (error) {
     if (token === startToken) {
       const status = document.getElementById('bank-status');
