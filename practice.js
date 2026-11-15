@@ -8,7 +8,7 @@ import {
 import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=4';
 import { downloadBackup } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
-import './cloud-sync.js?v=14';
+import './cloud-sync.js?v=15';
 import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=14';
 
 const app = document.getElementById('app');
