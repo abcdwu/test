@@ -4,8 +4,8 @@ import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1'
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
   questionSource, reviewQuestion, explanationContent, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
-} from './common.js?v=10';
-import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=4';
+} from './common.js?v=11';
+import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=5';
 import { downloadBackup } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
 import './cloud-sync.js?v=15';
