@@ -1,8 +1,8 @@
 import './word-translation.js?v=2';
 import { mountHighlights } from './highlights.js?v=4';
 import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=10';
-import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=11';
+import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=5';
 import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=14';
 import { mistakeStore } from './browser-store.js?v=14';
 import './cloud-sync.js?v=15';
