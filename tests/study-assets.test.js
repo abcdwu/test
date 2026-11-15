@@ -60,6 +60,23 @@ test('review links use the actual PDF source and show exact question and explana
   assert.match(markup, /source-quick-links/);
 });
 
+test('Safari fallback identifies the precise lightweight PDF segment without downloading PDF pages', async () => {
+  const { sourceChunkLocation } = await import('../source-chunks.js');
+  const savedFetch = globalThis.fetch;
+  const file = JSON.parse(read('sources/pages/manifest.json'));
+  globalThis.fetch = async url => {
+    assert.match(String(url), /sources\/pages\/manifest\.json/);
+    return new Response(JSON.stringify(file), { status: 200 });
+  };
+  try {
+    const chunk = await sourceChunkLocation('sources/torts.pdf', 154);
+    assert.ok(chunk.first <= 154 && chunk.last >= 154);
+    assert.equal(chunk.pageNumber, 154 - chunk.first + 1);
+    assert.equal(chunk.path, 'sources/pages/' + chunk.path.split('/').pop());
+    assert.equal(chunk.bytes, read(chunk.path).byteLength);
+  } finally { globalThis.fetch = savedFetch; }
+});
+
 test('public assets reject corrupt cache data and use a working mirror when the primary stalls', async () => {
   const body = new TextEncoder().encode('verified payload'), info = { sha256: hash(body), bytes: body.length };
   let cancelled = 0, mirror = 0;
