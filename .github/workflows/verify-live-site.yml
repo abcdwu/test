@@ -19,4 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node tests/live-bank-check.mjs
+      - name: Verify GitHub Pages published app (not the separately deployed Fly backend)
+        run: node tests/live-bank-check.mjs
+        env:
+          MBE_PUBLIC_TARGET: primary
