@@ -1,20 +1,22 @@
-import './word-translation.js?v=1';
-import { mountHighlights } from './highlights.js?v=3';
+import './word-translation.js?v=2';
+import { mountHighlights } from './highlights.js?v=4';
+import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
 import {
   SUBJECTS, answerLetter, esc, filterSubject, formatTime, loadBank, loadCatalog, QuizTimer,
-  questionSource, reviewQuestion, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
-} from './common.js?v=9';
+  questionSource, reviewQuestion, explanationContent, shuffle, subjectLabel, subjectOptions, sourcePageUrl,
+} from './common.js?v=10';
 import { mountSourcePages, unmountSourcePages, warmSourceLibrary } from './pdf-source.js?v=4';
-import { downloadBackup } from './mistake-store.js?v=12';
-import { mistakeStore } from './browser-store.js?v=12';
-import './cloud-sync.js?v=12';
-import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=10';
+import { downloadBackup } from './mistake-store.js?v=14';
+import { mistakeStore } from './browser-store.js?v=14';
+import './cloud-sync.js?v=14';
+import { accuracy, createAttempt, summarizeAttempts, roundProgress, remainingPool, historyMarkup } from './progress.js?v=14';
 
 const app = document.getElementById('app');
 const params = new URLSearchParams(location.search);
 const fromMistakes = params.get('source') === 'mistakes';
 let subject = params.get('subject') === 'all' || SUBJECTS.some(item => item.id === params.get('subject')) ? params.get('subject') : null;
 let bank = [], count = 10, mode = 'natural', session = null, ticker = null;
+let studyMode = 'exam', showTimer = true;
 let historyLimit = 20;
 let reviewing = false;
 const practiceSource = fromMistakes ? 'mistakes' : 'bank';
@@ -122,6 +124,7 @@ async function loadInlineHistory(target) {
 }
 
 async function showHistoryAttempt(id) {
+  if (!await flushStudyNotes(app, [...knownQuestions.values()])) return;
   const token = ++startToken;
   reviewing = true; preparing = false;
   clearInterval(ticker); session = null;
@@ -142,10 +145,10 @@ async function showHistoryAttempt(id) {
       ${questions.map((question, index) => {
         const record = attempt.details.questions[index];
         return `<section class="card result"><div class="result-title">第 ${index + 1} 题 <span class="result-state">${record.correct ? '回答正确' : record.selected === null ? '未作答' : '回答错误'}</span></div>
-          <p class="subject-tag">${esc(subjectLabel(question.subject))}</p>${reviewQuestion(question, record.selected)}</section>`;
+          <p class="subject-tag">${esc(subjectLabel(question.subject))}${record.flagged ? ' · ⚑ 当时已标记' : ''}</p>${record.excluded?.length ? `<p class="note">当时排除：${record.excluded.map(index => 'ABCD'[index]).join('、')}</p>` : ''}${reviewQuestion(question, record.selected)}${studyTools(question)}</section>`;
       }).join('')}`;
-    document.getElementById('history-back').addEventListener('click', home);
-    mountHighlights(app); mountSourcePages(app); window.scrollTo(0, 0);
+    document.getElementById('history-back').addEventListener('click', async () => { if (await flushStudyNotes(app, questions)) home(); });
+    mountHighlights(app); mountSourcePages(app); mountStudyTools(app, questions); window.scrollTo(0, 0);
   } catch (error) {
     if (token !== startToken) return;
     app.innerHTML = `${back}<p class="notice error" role="alert">${esc(error.message || '暂时无法恢复题目，请重试。')}</p><button type="button" class="primary" id="history-retry">重试打开记录</button>`;
@@ -160,6 +163,7 @@ function availableQuestions() {
 }
 
 function home() {
+  document.body.classList.remove('exam-session');
   reviewing = false;
   startToken++; preparing = false;
   unmountSourcePages(app);
@@ -200,8 +204,11 @@ function home() {
       <label class="label spaced" for="question-count">自定义题数</label>
       <input id="question-count" type="number" min="1" step="1" inputmode="numeric" value="${count}" aria-describedby="count-error count-note">
       <p id="count-error" class="notice error" role="alert" hidden>请输入大于 0 的整数。</p>
+      <label class="label spaced" for="study-mode">答题模式</label>
+      <select id="study-mode"><option value="exam" ${studyMode === 'exam' ? 'selected' : ''}>考试模式 · 整组交卷后查看解析</option><option value="tutor" ${studyMode === 'tutor' ? 'selected' : ''}>导师模式 · 提交单题后立即查看解析</option></select>
+      <p class="note">导师模式提交单题后锁定答案；整组交卷时统一记录成绩与本轮进度。</p>
       <label class="label spaced" for="timer-mode">计时方式</label>
-      <select id="timer-mode">
+      <select id="timer-mode" ${studyMode === 'tutor' ? 'disabled' : ''}>
         <option value="natural" ${mode === 'natural' ? 'selected' : ''}>自然计时 · 从 00:00 开始</option>
         <option value="countdown" ${mode === 'countdown' ? 'selected' : ''}>倒计时 · 每题 1.8 分钟</option>
       </select>
@@ -216,6 +223,7 @@ function home() {
     </section>
     <p class="foot">八科分开练习：民事诉讼法、宪法、合同法、刑法、刑事诉讼法、证据法、不动产法、侵权法。<br>错题在本机自动保存；登录云同步后可跨设备查看。清理浏览器前请确认同步完成。</p>`;
   document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; home(); });
+  document.getElementById('study-mode').addEventListener('change', event => { studyMode = event.target.value; mode = studyMode === 'tutor' ? 'natural' : 'countdown'; home(); });
   document.getElementById('timer-mode').addEventListener('change', event => { mode = event.target.value; home(); });
   app.querySelectorAll('[data-count]').forEach(button => button.addEventListener('click', () => {
     count = Number(button.dataset.count); home();
@@ -288,6 +296,7 @@ async function start() {
   session = {
     questions, rounds: roundSelection.rounds, answers: Array(questions.length).fill(null), index: 0,
     timer: new QuizTimer(mode, questions.length), submitted: false,
+    studyMode, flags: questions.map(() => false), excluded: questions.map(() => []), checked: questions.map(() => false),
   };
   render();
   ticker = setInterval(updateClock, 250);
@@ -306,67 +315,104 @@ function updateClock() {
 }
 
 function active() {
-  if (!session || session.submitted) return false;
+  if (!session || session.submitted || session.submitting) return false;
   if (session.timer.expired) { submitQuiz(true); return false; }
   return true;
 }
 
-function render() {
-  unmountSourcePages(app);
-  const { questions, answers, index, timer } = session;
-  const question = questions[index];
-  app.innerHTML = `<div class="meta quiz-meta">
-      <button class="link" id="exit">← 退出练习</button>
-      <span class="timer" role="timer" aria-label="${mode === 'countdown' ? '剩余时间' : '已用时间'}">${mode === 'countdown' ? '剩余' : '用时'} <strong id="clock">${formatTime(timer.displaySeconds)}</strong></span>
-      <span>${index + 1} / ${questions.length}</span>
-    </div>
-    <div class="bar"><div style="width:${(index + 1) / questions.length * 100}%"></div></div>
-    <div class="eyebrow">Question ${String(index + 1).padStart(2, '0')}</div>
-    <p class="subject-tag">${esc(subjectLabel(question.subject))}</p>
-    <h2>选择最佳答案</h2>
-    <section class="card"><div class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</div>
-      <div class="options">${question.choices.map((choice, number) => `
-        <button class="option ${answers[index] === number ? 'selected' : ''}" data-choice="${number}" aria-pressed="${answers[index] === number}">
-          <span class="letter">${'ABCD'[number]}</span><span>${esc(choice)}</span>
-        </button>`).join('')}</div>
-      ${questionSource(question)}
-    </section>
-    <div class="nav">${index ? '<button class="secondary" id="previous">上一题</button>' : ''}
-      ${index < questions.length - 1 ? '<button class="primary" id="next">下一题　→</button>' : '<button class="primary" id="submit">交卷并查看解析</button>'}
-    </div>
-    <p class="note" id="answered-count">已作答 ${answers.filter(answer => answer !== null).length} / ${questions.length} 题</p>`;
-  document.getElementById('exit').addEventListener('click', () => {
-    if (confirm('返回首页将结束本次练习，本次答案不会保存。确定吗？')) home();
-    else updateClock();
+function navigatorMarkup() {
+  return `<aside class="exam-sidebar" aria-label="题目导航"><div class="navigator-heading"><h2>题目导航</h2><span id="grid-progress"></span><button type="button" class="link mobile-navigator" id="close-navigator">收起</button></div>
+    <div class="navigator-legend"><span><i class="legend-dot answered"></i>已答</span><span><i class="legend-dot"></i>未答</span><span><b class="flag-symbol">⚑</b>已标记</span></div>
+    <div class="question-grid" role="group" aria-label="点击题号跳转">${session.questions.map((question, index) => `<button type="button" data-jump="${index}"><span>${index + 1}</span><b class="grid-flag" aria-hidden="true">⚑</b></button>`).join('')}</div>
+    <p class="note">点击题号可随时跳转。排除线只辅助判断，不代表最终作答。</p><a class="text-link" href="notebook.html" target="_blank" rel="noopener">笔记与闪卡 ↗</a>
+    <button type="button" class="secondary end-test" id="end-test">结束并交卷</button></aside>`;
+}
+function updateNavigation() {
+  const { answers, flags, index } = session;
+  app.querySelectorAll('[data-jump]').forEach(button => {
+    const number = Number(button.dataset.jump), answered = answers[number] !== null;
+    button.classList.toggle('answered', answered); button.classList.toggle('flagged', flags[number]);
+    button.classList.toggle('current', number === index); button.setAttribute('aria-current', number === index ? 'step' : 'false');
+    button.setAttribute('aria-label', `第 ${number + 1} 题，${answered ? '已答' : '未答'}${flags[number] ? '，已标记' : ''}`);
   });
+  document.getElementById('grid-progress').textContent = `${answers.filter(answer => answer !== null).length} / ${answers.length}`;
+  document.getElementById('answered-count').textContent = `已作答 ${answers.filter(answer => answer !== null).length} / ${answers.length} 题 · 标记 ${flags.filter(Boolean).length} 题`;
+  const flag = document.getElementById('flag-question'); flag.classList.toggle('flagged', flags[index]); flag.setAttribute('aria-pressed', String(flags[index]));
+  flag.innerHTML = `<span aria-hidden="true">⚑</span> ${flags[index] ? '已标记' : '标记本题'}`;
+  document.getElementById('check-answer')?.toggleAttribute('disabled', answers[index] === null);
+}
+async function navigate(index) {
+  if (!active()) return;
+  if (!await flushStudyNotes(app, session.questions)) return;
+  if (!active()) return;
+  session.index = index; render(); window.scrollTo(0, 0);
+}
+function render() {
+  unmountSourcePages(app); document.body.classList.add('exam-session');
+  const { questions, answers, index, timer, checked, excluded } = session;
+  const question = questions[index], revealed = session.studyMode === 'tutor' && checked[index];
+  app.innerHTML = `<div class="exam-toolbar meta quiz-meta"><div class="exam-context"><button class="link" id="exit">← 退出练习</button><span class="mode-badge">${session.studyMode === 'tutor' ? 'Tutor · 导师模式' : 'Exam · 考试模式'}</span></div>
+      <div class="exam-clock"><button type="button" class="link mobile-navigator" id="toggle-navigator" aria-expanded="false">题号导航</button><span class="timer" role="timer" aria-label="${mode === 'countdown' ? '剩余时间' : '已用时间'}" ${showTimer ? '' : 'hidden'}>${mode === 'countdown' ? '剩余' : '用时'} <strong id="clock">${formatTime(timer.displaySeconds)}</strong></span><button type="button" class="link" id="toggle-timer" aria-pressed="${showTimer}">${showTimer ? '隐藏计时' : '显示计时'}</button><span>${index + 1} / ${questions.length}</span></div></div>
+    <div class="exam-layout"><div class="exam-main"><div class="exam-question-heading"><div><div class="eyebrow">Question ${String(index + 1).padStart(2, '0')}</div><p class="subject-tag">${esc(subjectLabel(question.subject))}</p></div><button type="button" class="flag-button" id="flag-question" aria-pressed="false"></button></div>
+    <section class="card exam-question"><h2 class="sr-only">选择最佳答案</h2><div class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</div>
+      <div class="options">${question.choices.map((choice, number) => {
+        const letter = 'ABCD'[number], correct = revealed && question.answer === letter, wrong = revealed && answers[index] === number && !correct;
+        return `<div class="option-row ${excluded[index].includes(number) ? 'eliminated' : ''}"><button type="button" class="option ${answers[index] === number ? 'selected' : ''} ${correct ? 'correct' : wrong ? 'wrong' : ''}" data-choice="${number}" aria-pressed="${answers[index] === number}" ${revealed ? 'disabled' : ''}>
+          <span class="letter">${letter}</span><span class="choice-text" data-question-id="${esc(question.id + ':choice-' + letter)}">${esc(choice)}</span>${revealed ? `<b class="choice-verdict">${correct ? '✓ 正确答案' : wrong ? '✕ 你的答案' : ''}</b>` : ''}</button>
+          <button type="button" class="exclude-choice" data-exclude="${number}" aria-label="${excluded[index].includes(number) ? '恢复' : '排除'}选项 ${letter}" aria-pressed="${excluded[index].includes(number)}" ${revealed ? 'disabled' : ''}><span aria-hidden="true">${excluded[index].includes(number) ? '↶' : 'S̶'}</span></button></div>`;
+      }).join('')}</div>${questionSource(question)}</section>
+    ${session.studyMode === 'tutor' ? revealed ? `<section class="card tutor-feedback" role="region" aria-label="本题解析"><div class="feedback-verdict ${answers[index] !== 'ABCD'.indexOf(question.answer) ? 'incorrect' : ''}">${answers[index] === 'ABCD'.indexOf(question.answer) ? '✓ 回答正确' : '✕ 回答错误'}<span>正确答案 ${question.answer}</span></div>${explanationContent(question)}${studyTools(question)}</section>` : '<button type="button" class="primary check-answer" id="check-answer">提交本题并查看解析</button>' : ''}
+    <div class="nav exam-nav">${index ? '<button class="secondary" id="previous">上一题</button>' : '<span></span>'}${index < questions.length - 1 ? '<button class="primary" id="next">下一题　→</button>' : '<button class="primary" id="submit">交卷并查看解析</button>'}</div>
+    <p class="note" id="answered-count"></p></div>${navigatorMarkup()}</div>`;
+  document.getElementById('exit').addEventListener('click', async () => {
+    if (confirm('返回首页将结束本次练习，本次答案不会保存。确定吗？') && await flushStudyNotes(app, questions)) home(); else updateClock();
+  });
+  document.getElementById('toggle-timer').addEventListener('click', () => {
+    showTimer = !showTimer; app.querySelector('[role="timer"]').hidden = !showTimer;
+    const button = document.getElementById('toggle-timer'); button.textContent = showTimer ? '隐藏计时' : '显示计时'; button.setAttribute('aria-pressed', String(showTimer));
+  });
+  for (const id of ['toggle-navigator', 'close-navigator']) document.getElementById(id).addEventListener('click', () => {
+    const open = app.querySelector('.exam-sidebar').classList.toggle('mobile-open'); document.getElementById('toggle-navigator').setAttribute('aria-expanded', String(open));
+  });
+  document.getElementById('flag-question').addEventListener('click', () => { if (active()) { session.flags[index] = !session.flags[index]; updateNavigation(); } });
+  app.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => navigate(Number(button.dataset.jump))));
   app.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => {
-    if (!active()) return;
-    session.answers[session.index] = Number(button.dataset.choice);
-    app.querySelectorAll('[data-choice]').forEach(option => {
-      const selected = Number(option.dataset.choice) === session.answers[session.index];
-      option.classList.toggle('selected', selected);
-      option.setAttribute('aria-pressed', String(selected));
-    });
-    document.getElementById('answered-count').textContent = `已作答 ${session.answers.filter(answer => answer !== null).length} / ${questions.length} 题`;
+    const selection = document.getSelection();
+    if (selection && !selection.isCollapsed && button.contains(selection.anchorNode)) return;
+    if (!active() || session.checked[index]) return;
+    const number = Number(button.dataset.choice); if (session.excluded[index].includes(number)) return;
+    session.answers[index] = number;
+    app.querySelectorAll('[data-choice]').forEach(option => { const selected = Number(option.dataset.choice) === number; option.classList.toggle('selected', selected); option.setAttribute('aria-pressed', String(selected)); });
+    updateNavigation();
   }));
-  for (const [id, direction] of [['previous', -1], ['next', 1]]) {
-    document.getElementById(id)?.addEventListener('click', () => {
-      if (!active()) return;
-      session.index += direction; render(); window.scrollTo(0, 0);
-    });
-  }
+  app.querySelectorAll('[data-exclude]').forEach(button => button.addEventListener('click', () => {
+    if (!active() || session.checked[index]) return;
+    const number = Number(button.dataset.exclude), old = session.excluded[index];
+    session.excluded[index] = old.includes(number) ? old.filter(value => value !== number) : [...old, number];
+    const removed = session.excluded[index].includes(number), row = button.closest('.option-row'); row.classList.toggle('eliminated', removed);
+    if (removed && answers[index] === number) { answers[index] = null; row.querySelector('[data-choice]').classList.remove('selected'); row.querySelector('[data-choice]').setAttribute('aria-pressed', 'false'); }
+    button.setAttribute('aria-pressed', String(removed)); button.setAttribute('aria-label', `${removed ? '恢复' : '排除'}选项 ${'ABCD'[number]}`); button.firstElementChild.textContent = removed ? '↶' : 'S̶'; updateNavigation();
+  }));
+  for (const [id, direction] of [['previous', -1], ['next', 1]]) document.getElementById(id)?.addEventListener('click', () => navigate(index + direction));
+  document.getElementById('check-answer')?.addEventListener('click', () => {
+    if (!active() || answers[index] === null || session.checked[index]) return;
+    session.checked[index] = true; render();
+  });
   document.getElementById('submit')?.addEventListener('click', () => submitQuiz());
-  mountHighlights(app);
-  mountSourcePages(app);
+  document.getElementById('end-test').addEventListener('click', () => submitQuiz());
+  updateNavigation(); mountHighlights(app); mountSourcePages(app); mountStudyTools(app, [question]);
 }
 
 async function submitQuiz(automatic = false) {
-  if (!session || session.submitted) return;
+  if (!session || session.submitted || session.submitting) return;
   automatic = automatic || session.timer.expired;
   const missing = session.answers.filter(answer => answer === null).length;
   if (!automatic && missing && !confirm(`还有 ${missing} 题未作答，将按错误计分并收录到错题本。确定交卷吗？`)) {
     updateClock(); return;
   }
+  automatic = automatic || session.timer.expired;
+  session.submitting = true;
+  if (!await flushStudyNotes(app, session.questions)) { session.submitting = false; return; }
   automatic = automatic || session.timer.expired;
   session.submitted = true;
   session.timer.stop();
@@ -374,6 +420,7 @@ async function submitQuiz(automatic = false) {
   session.attempt = createAttempt(session.questions, session.answers, crypto.randomUUID(), new Date().toISOString(), {
     startedAt: new Date(session.timer.startedAt).toISOString(), durationSeconds: Math.floor(elapsed / 1000),
     source: practiceSource, rounds: session.rounds, timerMode: mode,
+    studyMode: session.studyMode, flags: session.flags, excluded: session.excluded,
   });
   clearInterval(ticker);
   let saved;
@@ -385,6 +432,7 @@ async function submitQuiz(automatic = false) {
 }
 
 function results(automatic, saved) {
+  document.body.classList.remove('exam-session');
   unmountSourcePages(app);
   const { questions, answers, timer } = session;
   const score = questions.filter((question, index) => answerLetter(answers[index]) === question.answer).length;
@@ -402,18 +450,23 @@ function results(automatic, saved) {
     ${saved === null ? '<button class="secondary" id="save-backup">下载本次错题备份</button>' : ''}
     ${historySection(true)}
     <p><a class="text-link" href="mistakes.html">打开独立错题本 →</a></p>
+    <div class="report-toolbar"><label for="report-filter">回顾范围</label><select id="report-filter"><option value="all">全部题目</option><option value="wrong">只看错题</option><option value="flagged">只看标记题</option></select><a class="text-link" href="notebook.html">笔记与闪卡 →</a></div><p class="note" id="report-count" role="status"></p>
     ${questions.map((question, index) => {
       const selected = answerLetter(answers[index]);
       const correct = selected === question.answer;
-      return `<section class="card result">
+      return `<section class="card result" data-result-index="${index}" data-wrong="${!correct}" data-flagged="${session.flags[index]}">
         <div class="result-title"><span class="mark ${correct ? '' : 'bad'}">${correct ? '✓' : '✕'}</span>第 ${index + 1} 题
           <span class="result-state">${correct ? '回答正确' : selected === null ? '未作答' : '回答错误'}</span></div>
-        <p class="subject-tag">${esc(subjectLabel(question.subject))}</p>
-        ${reviewQuestion(question, selected)}</section>`;
+        <p class="subject-tag">${esc(subjectLabel(question.subject))}${session.flags[index] ? ' · ⚑ 已标记' : ''}</p>
+        ${reviewQuestion(question, selected)}${studyTools(question)}</section>`;
     }).join('')}
     <button class="primary" id="again">再练一组</button>
     <p class="foot">解析来自所提供的 PDF；答案依据原文选项说明匹配。建议对疑义题目核对原始材料。</p>`;
-  document.getElementById('again').addEventListener('click', () => { home(); window.scrollTo(0, 0); });
+  document.getElementById('report-filter').addEventListener('change', event => {
+    let visible = 0; for (const result of app.querySelectorAll('[data-result-index]')) { result.hidden = event.target.value === 'wrong' ? result.dataset.wrong !== 'true' : event.target.value === 'flagged' ? result.dataset.flagged !== 'true' : false; if (!result.hidden) visible++; }
+    document.getElementById('report-count').textContent = `显示 ${visible} / ${questions.length} 题`;
+  });
+  document.getElementById('again').addEventListener('click', async () => { if (await flushStudyNotes(app, questions)) { home(); window.scrollTo(0, 0); } });
   document.getElementById('retry-save')?.addEventListener('click', async event => {
     event.target.disabled = true;
     let retried;
@@ -429,11 +482,12 @@ function results(automatic, saved) {
     }]);
     let highlights = [];
     try { highlights = mistakeStore.readHighlights(); } catch { /* Still allow the current unsaved attempt to be backed up. */ }
-    downloadBackup(entries, [session.attempt], highlights);
+    downloadBackup(entries, [session.attempt], highlights, mistakeStore.readStudy());
   });
   mountHistory();
   mountHighlights(app);
   mountSourcePages(app);
+  mountStudyTools(app, questions);
   window.scrollTo(0, 0);
 }
 

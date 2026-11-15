@@ -15,6 +15,10 @@ on:
       - source-chunks.js
       - source-viewer.js
       - word-translation.js
+      - study-core.js
+      - study-ui.js
+      - notebook.html
+      - notebook.js
       - source.html
       - dictionary/**
       - sources/pages/**

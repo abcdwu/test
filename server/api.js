@@ -7,6 +7,7 @@ import { mergeEntry, validateEntries } from '../mistake-store.js';
 import { mergeAttempts, validateAttempts } from '../progress.js';
 import { mergeHighlights, validateHighlights, highlightKey } from '../highlight-core.js';
 import { serveStatic } from './static.js';
+import { mergeStudy, validateStudy } from '../study-core.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
@@ -24,6 +25,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS quiz_attempts (id TEXT PRIMARY KEY, attempt TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS highlights (id TEXT PRIMARY KEY, record TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS study_records (id TEXT PRIMARY KEY, record TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL);
     INSERT OR IGNORE INTO sync_state VALUES (1, 0);`);
   const passwordSalt = randomBytes(32);
@@ -33,6 +35,8 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
   const readAttempts = () => db.prepare('SELECT attempt FROM quiz_attempts ORDER BY id').all().map(row => JSON.parse(row.attempt));
   const readHighlights = () => db.prepare('SELECT record FROM highlights ORDER BY id').all().map(row => JSON.parse(row.record));
   const saveHighlight = db.prepare('INSERT INTO highlights(id, record) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET record=excluded.record');
+  const readStudy = () => db.prepare('SELECT record FROM study_records ORDER BY id').all().map(row => JSON.parse(row.record));
+  const saveStudy = db.prepare('INSERT INTO study_records(id, record) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET record=excluded.record');
   const saveAttempt = db.prepare('INSERT INTO quiz_attempts(id, attempt) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET attempt=excluded.attempt');
   const saveEntry = db.prepare('INSERT INTO mistakes(id, entry) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET entry=excluded.entry');
 
@@ -65,7 +69,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
     }
     if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
     const path = request.url?.split('?')[0];
-    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts', 'highlights', ...(staticDirectory ? ['public-bank'] : [])] }); return; }
+    if (path === '/health' && request.method === 'GET') { respond(response, 200, { ok: true, features: ['quiz-attempts', 'highlights', 'notebook', ...(staticDirectory ? ['public-bank'] : [])] }); return; }
     if (serveStatic(request, response, staticDirectory)) return;
     try {
       if (path === '/auth/login' && request.method === 'POST') {
@@ -108,6 +112,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
         validateEntries(body.entries);
         validateAttempts(body.attempts ?? []);
         validateHighlights(body.highlights ?? []);
+        validateStudy(body.study ?? []);
         if (body.entries.length > 10_000) throw new Error('Too many entries');
         db.exec('BEGIN IMMEDIATE');
         let revision;
@@ -126,6 +131,10 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
             const key = highlightKey(record);
             if (knownHighlights.get(key) !== JSON.stringify(record)) { saveHighlight.run(hash(key), JSON.stringify(record)); changed = true; }
           }
+          const previousStudy = readStudy(), knownStudy = new Map(previousStudy.map(record => [record.questionId, JSON.stringify(record)]));
+          for (const record of mergeStudy(previousStudy, body.study ?? [])) {
+            if (knownStudy.get(record.questionId) !== JSON.stringify(record)) { saveStudy.run(record.questionId, JSON.stringify(record)); changed = true; }
+          }
           for (const entry of body.entries) {
             const merged = mergeEntry(existing.get(entry.question.id), entry);
             if (JSON.stringify(merged) !== JSON.stringify(existing.get(entry.question.id))) {
@@ -140,6 +149,7 @@ export function createApi({ databasePath, loginPassword, allowedOrigins, trustFl
           entries: body.revision === revision ? [] : readEntries(),
           attempts: body.revision === revision ? [] : readAttempts(),
           highlights: body.revision === revision ? [] : readHighlights(),
+          study: body.revision === revision ? [] : readStudy(),
           revision, syncedAt: new Date().toISOString(),
         }); return;
       }

@@ -1,10 +1,11 @@
-import './word-translation.js?v=1';
-import { mountHighlights } from './highlights.js?v=3';
-import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=9';
+import './word-translation.js?v=2';
+import { mountHighlights } from './highlights.js?v=4';
+import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
+import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=10';
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
-import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=12';
-import { mistakeStore } from './browser-store.js?v=12';
-import './cloud-sync.js?v=12';
+import { downloadBackup, STORAGE_KEY } from './mistake-store.js?v=14';
+import { mistakeStore } from './browser-store.js?v=14';
+import './cloud-sync.js?v=14';
 
 const app = document.getElementById('app');
 const requested = new URLSearchParams(location.search).get('subject');
@@ -12,6 +13,7 @@ let subject = SUBJECTS.some(item => item.id === requested) ? requested : 'all';
 let backupMessage = '', backupError = false;
 
 function render() {
+  if ([...app.querySelectorAll('textarea.study-note')].some(input => input.value !== input.defaultValue)) return;
   unmountSourcePages(app);
   let entries;
   try { entries = mistakeStore.read(); }
@@ -33,7 +35,7 @@ function render() {
       <summary>手动备份与恢复（可选）</summary>
       <p class="sub">云同步启用后无需日常操作。也可自行保留 JSON 备份；恢复时合并记录、保留现有错题，重复导入不会重复累计次数。</p>
       <div class="nav">
-        <button class="secondary" id="export" ${!entries.length && !mistakeStore.readAttempts().length && !mistakeStore.readHighlights().length ? 'disabled' : ''}>导出错题、统计与高亮</button>
+        <button class="secondary" id="export" ${!entries.length && !mistakeStore.readAttempts().length && !mistakeStore.readHighlights().length && !mistakeStore.readStudy().length ? 'disabled' : ''}>导出全部练习数据</button>
         <button class="secondary" id="import">从备份恢复</button>
       </div>
       <input type="file" id="backup-file" accept=".json,application/json" hidden>
@@ -44,12 +46,12 @@ function render() {
         <span class="mistake-title">${esc(entry.question.stem.slice(0, 145))}${entry.question.stem.length > 145 ? '…' : ''}</span>
         <span class="mistake-meta">累计出错 ${entry.wrongCount} 次 · 最近作答：${entry.lastAnswer ?? '未作答'} · ${esc(new Date(entry.lastWrongAt).toLocaleString('zh-CN'))}</span>
         <span class="text-link detail-hint">展开题目与解析</span>
-      </summary>${reviewQuestion(entry.question, entry.lastAnswer)}</details>`).join('')
+      </summary>${reviewQuestion(entry.question, entry.lastAnswer)}${studyTools(entry.question)}</details>`).join('')
       : '<section class="card empty"><h2>这里还没有错题。</h2><p class="sub">去完成一组练习，错题就会自动出现在这里。</p><a class="text-link" href="index.html">开始练习 →</a></section>'}`;
-  document.getElementById('subject').addEventListener('change', event => { subject = event.target.value; render(); });
+  document.getElementById('subject').addEventListener('change', async event => { if (await flushStudyNotes(app, entries.map(entry => entry.question))) { subject = event.target.value; render(); } });
   document.getElementById('export').addEventListener('click', () => {
     try {
-      downloadBackup(mistakeStore.read(), mistakeStore.readAttempts(), mistakeStore.readHighlights());
+      downloadBackup(mistakeStore.read(), mistakeStore.readAttempts(), mistakeStore.readHighlights(), mistakeStore.readStudy());
       backupMessage = '已生成备份，请保留下载的 JSON 文件。'; backupError = false;
     } catch { backupMessage = '导出失败，请检查浏览器存储和下载权限。'; backupError = true; }
     render();
@@ -72,6 +74,7 @@ function render() {
   });
   mountHighlights(app);
   mountSourcePages(app);
+  mountStudyTools(app, filtered.map(entry => entry.question));
 }
 
 window.addEventListener('storage', event => { if (event.key === STORAGE_KEY || event.key === null) render(); });
@@ -92,7 +95,10 @@ async function refreshSavedQuestions() {
   } catch { /* Saved full snapshots remain usable without a bank download. */ }
   finally { refreshing = false; }
 }
-function dataChanged() { render(); refreshSavedQuestions(); }
+async function dataChanged() {
+  if (!await flushStudyNotes(app, mistakeStore.read().map(entry => entry.question))) return;
+  render(); refreshSavedQuestions();
+}
 window.addEventListener('mbe:cloud-synced', dataChanged);
 window.addEventListener('mbe:local-refreshed', dataChanged);
 mistakeStore.ready.then(() => { render(); refreshSavedQuestions(); });

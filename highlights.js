@@ -1,4 +1,4 @@
-import { mistakeStore } from './browser-store.js?v=12';
+import { mistakeStore } from './browser-store.js?v=14';
 import { HIGHLIGHT_PREFIX as PREFIX, mergeRanges, removeRange, mergeHighlights, highlightRanges, highlightChange, cachedHighlight, segmentHitsRect } from './highlight-core.js?v=1';
 export { mergeRanges, removeRange, segmentHitsRect } from './highlight-core.js?v=1';
 const memory = new Map();
@@ -251,6 +251,7 @@ class Highlighter {
     }
     for (const state of this.states) {
       const selected = !this.penMode && this.pending?.state === state;
+      state.toolbar.classList.toggle('has-selection', selected);
       state.toolbar.querySelector('[data-highlight="add"]').disabled = !selected;
       state.toolbar.querySelector('[data-highlight="remove"]').disabled = !selected
         || !state.ranges.some(([start, end]) => start < this.pending.range[1] && end > this.pending.range[0]);
@@ -261,11 +262,12 @@ class Highlighter {
     this.cancelStroke();
     this.root.querySelectorAll('.highlight-tools').forEach(toolbar => toolbar.remove());
     this.pending = null;
-    this.states = [...this.root.querySelectorAll('.question[data-question-id]')].map(stem => {
+    this.states = [...this.root.querySelectorAll('.question[data-question-id],.choice-text[data-question-id]')].map(stem => {
       const text = stem.textContent, id = stem.dataset.questionId;
       const stored = read(id, text);
       const toolbar = document.createElement('div');
       toolbar.className = 'highlight-tools';
+      if (stem.classList.contains('choice-text')) toolbar.classList.add('choice-highlight-tools');
       toolbar.innerHTML = '<div class="highlight-actions" role="group" aria-label="题干高亮">'
         + '<button type="button" data-highlight="pen" aria-pressed="false">笔高亮</button>'
         + '<button type="button" data-highlight="eraser" aria-pressed="false">笔擦除</button>'
@@ -273,7 +275,8 @@ class Highlighter {
         + '<button type="button" data-highlight="remove" disabled>取消选中高亮</button>'
         + '<button type="button" data-highlight="clear" disabled>清除本题高亮</button></div>'
         + '<p class="highlight-status" role="status"></p>';
-      stem.before(toolbar);
+      if (stem.classList.contains('choice-text')) stem.closest('.option-row,.ro').append(toolbar);
+      else stem.before(toolbar);
       const status = toolbar.querySelector('.highlight-status');
       status.textContent = stored.unavailable ? '本机存储不可用，标记仅在本页暂存。'
         : '选中题干文字后可高亮；手机长按选择。本机保存，登录后自动云同步。';

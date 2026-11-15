@@ -1,6 +1,6 @@
-import { SUBJECTS, esc } from './common.js?v=9';
+import { SUBJECTS, esc } from './common.js?v=10';
 import { mountSourcePages } from './pdf-source.js?v=4';
-import './word-translation.js?v=1';
+import './word-translation.js?v=2';
 const app = document.getElementById('source-app'), params = new URLSearchParams(location.search);
 const subject = SUBJECTS.find(item => item.id === params.get('subject'));
 const pages = [...new Set((params.get('pages') || '').split(',').map(Number))];
