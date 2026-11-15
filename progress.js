@@ -124,6 +124,27 @@ export function roundProgress(attempts, counts, source = 'bank', validIds = null
   return { bySubject, total, completed, remaining: total - completed };
 }
 
+// Use the original PDF question number, not array position or randomized order.
+// Mixed-subject sessions follow the fixed SUBJECTS order, then descend within each
+// subject. A missing source number is placed last and sorted by stable ID.
+export function orderQuestionsBySource(questions) {
+  const subjectRank = new Map(SUBJECTS.map((subject, index) => [subject.id, index]));
+  const sourceNumber = question => Number.isSafeInteger(question.source?.questionNumber)
+    && question.source.questionNumber > 0 ? question.source.questionNumber : null;
+  return [...questions].sort((left, right) => {
+    const bySubject = (subjectRank.get(left.subject) ?? SUBJECTS.length)
+      - (subjectRank.get(right.subject) ?? SUBJECTS.length);
+    if (bySubject) return bySubject;
+    const leftNumber = sourceNumber(left), rightNumber = sourceNumber(right);
+    if (leftNumber === null && rightNumber !== null) return 1;
+    if (rightNumber === null && leftNumber !== null) return -1;
+    if (leftNumber !== null && rightNumber !== null && leftNumber !== rightNumber) return rightNumber - leftNumber;
+    // Rare cross-file same-number questions need a consistent tie-breaker.
+    const byDocument = (left.source?.pdfPath || '').localeCompare(right.source?.pdfPath || '');
+    return byDocument || left.id.localeCompare(right.id);
+  });
+}
+
 export function remainingPool(questions, attempts, source = 'bank') {
   const counts = {};
   for (const question of questions) counts[question.subject] = (counts[question.subject] ?? 0) + 1;
