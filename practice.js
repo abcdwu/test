@@ -1,4 +1,5 @@
 import './word-translation.js?v=2';
+import { translateQuestion } from './question-translation.js?v=1';
 import { mountHighlights } from './highlights.js?v=4';
 import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
 import {
@@ -308,6 +309,7 @@ async function start() {
     questions, rounds: roundSelection.rounds, answers: Array(questions.length).fill(null), index: 0,
     timer: new QuizTimer(mode, questions.length), submitted: false,
     studyMode, flags: questions.map(() => false), excluded: questions.map(() => []), checked: questions.map(() => false),
+    translations: new Map(), translationPending: new Map(), translationErrors: new Map(), translationVisible: new Set(),
   };
   render();
   ticker = setInterval(updateClock, 250);
@@ -358,23 +360,81 @@ async function navigate(index) {
   if (!active()) return;
   session.index = index; render(); window.scrollTo(0, 0);
 }
+function translationMarkup(question) {
+  if (!session.translationVisible.has(question.id)) return '';
+  const translated = session.translations.get(question.id);
+  const error = session.translationErrors.get(question.id);
+  if (translated) return `<section class="translation-panel" aria-label="题目和选项的中文翻译">
+    <p class="translation-title">中文辅助翻译</p><p class="translation-stem">${esc(translated.stem)}</p>
+    <ol class="translation-choices">${translated.choices.map((text, index) => `<li><strong>${'ABCD'[index]}.</strong> <span>${esc(text)}</span></li>`).join('')}</ol>
+    <p class="translation-foot">机器翻译仅供理解题意，法律概念及最终选项以英文原文为准。</p>
+  </section>`;
+  if (error) return `<section class="translation-panel" aria-label="翻译状态"><p class="translation-error" role="alert">${esc(error)}</p>
+    <button type="button" class="secondary" id="retry-translation">重新翻译</button></section>`;
+  return '<section class="translation-panel" aria-label="翻译状态"><p class="translation-loading" role="status">正在翻译题干和 A–D 选项…</p></section>';
+}
+
+function requestTranslation(activeSession, question) {
+  if (activeSession.translations.has(question.id) || activeSession.translationPending.has(question.id)) return;
+  activeSession.translationErrors.delete(question.id);
+  const promise = translateQuestion(question).then(translated => {
+    activeSession.translations.set(question.id, translated);
+  }).catch(error => {
+    activeSession.translationErrors.set(question.id, error.message || '暂时无法翻译，请稍后重试。');
+  }).finally(() => {
+    activeSession.translationPending.delete(question.id);
+    if (session === activeSession && !session.submitted && session.questions[session.index]?.id === question.id
+        && activeSession.translationVisible.has(question.id)) {
+      const area = app.querySelector('#translation-area');
+      if (area) area.innerHTML = translationMarkup(question);
+      document.getElementById('retry-translation')?.addEventListener('click', () => {
+        activeSession.translationErrors.delete(question.id);
+        const target = app.querySelector('#translation-area');
+        if (target) target.innerHTML = translationMarkup(question);
+        requestTranslation(activeSession, question);
+      });
+    }
+  });
+  activeSession.translationPending.set(question.id, promise);
+}
+
 function render() {
   unmountSourcePages(app); document.body.classList.add('exam-session');
   const { questions, answers, index, timer, checked, excluded } = session;
   const question = questions[index], revealed = session.studyMode === 'tutor' && checked[index];
   app.innerHTML = `<div class="exam-toolbar meta quiz-meta"><div class="exam-context"><button class="link" id="exit">← 退出练习</button><span class="mode-badge">${session.studyMode === 'tutor' ? 'Tutor · 导师模式' : 'Exam · 考试模式'}</span></div>
       <div class="exam-clock"><button type="button" class="link mobile-navigator" id="toggle-navigator" aria-expanded="false">题号导航</button><span class="timer" role="timer" aria-label="${mode === 'countdown' ? '剩余时间' : '已用时间'}" ${showTimer ? '' : 'hidden'}>${mode === 'countdown' ? '剩余' : '用时'} <strong id="clock">${formatTime(timer.displaySeconds)}</strong></span><button type="button" class="link" id="toggle-timer" aria-pressed="${showTimer}">${showTimer ? '隐藏计时' : '显示计时'}</button><span>${index + 1} / ${questions.length}</span></div></div>
-    <div class="exam-layout"><div class="exam-main"><div class="exam-question-heading"><div><div class="eyebrow">Question ${String(index + 1).padStart(2, '0')}</div><p class="subject-tag">${esc(subjectLabel(question.subject))}</p></div><button type="button" class="flag-button" id="flag-question" aria-pressed="false"></button></div>
+    <div class="exam-layout"><div class="exam-main"><div class="exam-question-heading"><div><div class="eyebrow">Question ${String(index + 1).padStart(2, '0')}</div><p class="subject-tag">${esc(subjectLabel(question.subject))}</p>
+      <button type="button" class="secondary translation-toggle" id="translate-question" aria-pressed="${session.translationVisible.has(question.id)}">${session.translationVisible.has(question.id) ? '隐藏中文翻译' : '一键翻译成中文'}</button></div><button type="button" class="flag-button" id="flag-question" aria-pressed="false"></button></div>
     <section class="card exam-question"><h2 class="sr-only">选择最佳答案</h2><div class="question" data-question-id="${esc(question.id)}">${esc(question.stem)}</div>
       <div class="options">${question.choices.map((choice, number) => {
         const letter = 'ABCD'[number], correct = revealed && question.answer === letter, wrong = revealed && answers[index] === number && !correct;
         return `<div class="option-row ${excluded[index].includes(number) ? 'eliminated' : ''}"><button type="button" class="option ${answers[index] === number ? 'selected' : ''} ${correct ? 'correct' : wrong ? 'wrong' : ''}" data-choice="${number}" aria-pressed="${answers[index] === number}" ${revealed ? 'disabled' : ''}>
           <span class="letter">${letter}</span><span class="choice-text" data-question-id="${esc(question.id + ':choice-' + letter)}">${esc(choice)}</span>${revealed ? `<b class="choice-verdict">${correct ? '✓ 正确答案' : wrong ? '✕ 你的答案' : ''}</b>` : ''}</button>
           <button type="button" class="exclude-choice" data-exclude="${number}" aria-label="${excluded[index].includes(number) ? '恢复' : '排除'}选项 ${letter}" aria-pressed="${excluded[index].includes(number)}" ${revealed ? 'disabled' : ''}><span aria-hidden="true">${excluded[index].includes(number) ? '↶' : 'S̶'}</span></button></div>`;
-      }).join('')}</div>${questionSource(question)}</section>
+      }).join('')}</div><div id="translation-area">${translationMarkup(question)}</div>${questionSource(question)}</section>
     ${session.studyMode === 'tutor' ? revealed ? `<section class="card tutor-feedback" role="region" aria-label="本题解析"><div class="feedback-verdict ${answers[index] !== 'ABCD'.indexOf(question.answer) ? 'incorrect' : ''}">${answers[index] === 'ABCD'.indexOf(question.answer) ? '✓ 回答正确' : '✕ 回答错误'}<span>正确答案 ${question.answer}</span></div>${explanationContent(question)}${studyTools(question)}</section>` : '<button type="button" class="primary check-answer" id="check-answer">提交本题并查看解析</button>' : ''}
     <div class="nav exam-nav">${index ? '<button class="secondary" id="previous">上一题</button>' : '<span></span>'}${index < questions.length - 1 ? '<button class="primary" id="next">下一题　→</button>' : '<button class="primary" id="submit">交卷并查看解析</button>'}</div>
     <p class="note" id="answered-count"></p></div>${navigatorMarkup()}</div>`;
+  document.getElementById('translate-question').addEventListener('click', () => {
+    const activeSession = session;
+    if (activeSession.translationVisible.has(question.id)) activeSession.translationVisible.delete(question.id);
+    else activeSession.translationVisible.add(question.id);
+    const on = activeSession.translationVisible.has(question.id);
+    const button = document.getElementById('translate-question');
+    button.textContent = on ? '隐藏中文翻译' : '一键翻译成中文';
+    button.setAttribute('aria-pressed', String(on));
+    app.querySelector('#translation-area').innerHTML = translationMarkup(question);
+    if (on) {
+      if (activeSession.translationErrors.has(question.id)) activeSession.translationErrors.delete(question.id);
+      requestTranslation(activeSession, question);
+    }
+  });
+  document.getElementById('retry-translation')?.addEventListener('click', () => {
+    session.translationErrors.delete(question.id);
+    app.querySelector('#translation-area').innerHTML = translationMarkup(question);
+    requestTranslation(session, question);
+  });
   document.getElementById('exit').addEventListener('click', async () => {
     if (confirm('返回首页将结束本次练习，本次答案不会保存。确定吗？') && await flushStudyNotes(app, questions)) home(); else updateClock();
   });
