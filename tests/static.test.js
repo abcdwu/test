@@ -14,7 +14,7 @@ test('the backup serves the public app and bank with PDF ranges, but never priva
     const highlights = await fetch(base + '/highlights.js');
     assert.equal(highlights.status, 200); assert.match(await highlights.text(), /mountHighlights/);
     const core = await fetch(base + '/highlight-core.js'); assert.equal(core.status, 200);
-    for (const path of ['/source.html', '/source-viewer.js', '/source-chunks.js', '/public-assets.js', '/word-translation.js', '/dictionary/manifest.json', '/sources/pages/manifest.json']) {
+    for (const path of ['/source.html', '/source-viewer.js', '/source-chunks.js', '/public-assets.js', '/word-translation.js', '/dictionary/manifest.json', '/sources/pages/manifest.json', '/notebook.html', '/notebook.js', '/study-core.js', '/study-ui.js']) {
       assert.equal((await fetch(base + path)).status, 200, path + ' must be available on the backup');
     }
     const manifestResponse = await fetch(base + '/bank/manifest.json', { headers: { Origin: 'https://test.chaoxu.me' } });

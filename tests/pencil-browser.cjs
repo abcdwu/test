@@ -43,8 +43,8 @@ async function marked(page) { return (await page.locator('.question mark').allTe
       const p = await points(page, start, end);
       await pen('mousePressed', p.x1, p.y); await pen('mouseMoved', p.x2, p.y); await pen('mouseReleased', p.x2, p.y);
     };
-    await page.locator('[data-highlight="pen"]').click();
-    assert.equal(await page.locator('[data-highlight="pen"]').getAttribute('aria-pressed'), 'true');
+    await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').click();
+    assert.equal(await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('.question').evaluate(el => getComputedStyle(el).touchAction), 'none');
     const initial = await points(page, 0, 16);
     await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: initial.x1, y: initial.y, pointerType: 'pen', buttons: 0 });
@@ -70,9 +70,9 @@ async function marked(page) { return (await page.locator('.question mark').allTe
     assert.ok(await page.evaluate(() => scrollY) > scrollBeforeFinger + 20, 'finger drag scrolls in pen mode');
     assert.equal(await marked(page), beforeFinger, 'fingers never highlight');
 
-    await page.locator('[data-highlight="eraser"]').click(); await stroke(0, 5);
+    await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="eraser"]').click(); await stroke(0, 5);
     assert.ok(!(await marked(page)).includes('Alpha')); assert.match(await marked(page), /gamma/);
-    await page.locator('[data-highlight="pen"]').click();
+    await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').click();
     const beforeCancel = await marked(page), cancel = await points(page, 0, 5);
     await pen('mousePressed', cancel.x1, cancel.y); await pen('mouseMoved', cancel.x2, cancel.y);
     const pointerId = await page.evaluate(() => window.lastPenId);
@@ -88,11 +88,11 @@ async function marked(page) { return (await page.locator('.question mark').allTe
     if (await page.locator('#next').count()) { await page.locator('#next').click(); await page.locator('#previous').click(); }
     else { await page.locator('#previous').click(); await page.locator('#next').click(); }
     assert.equal(await marked(page), saved);
-    assert.equal(await page.locator('[data-highlight="pen"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').getAttribute('aria-pressed'), 'true');
     page.once('dialog', d => d.accept()); await page.goto(origin); await page.locator('#start').click();
     if (await page.locator('.question').getAttribute('data-question-id') !== id) await page.locator('#next').click();
     assert.equal(await marked(page), saved, 'pen marks survive reload using the existing storage format');
-    await page.locator('[data-highlight="pen"]').click(); await page.locator('[data-highlight="pen"]').click();
+    await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').click(); await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="pen"]').click();
     assert.equal(await page.locator('.question').evaluate(el => getComputedStyle(el).userSelect), 'text');
     const stored = await page.evaluate(id => JSON.parse(localStorage.getItem('mbe-highlights:v1:' + id)), id);
     assert.equal(stored.text, text); assert.ok(Array.isArray(stored.ranges));

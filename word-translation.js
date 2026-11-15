@@ -1,5 +1,5 @@
 import { publicAssets } from './public-assets.js?v=1';
-const READABLE = '.question,.option span:last-child,.ro,.history-stem,.history-choices li span:last-child,.extracted-content,.textLayer span';
+const READABLE = '.question,.choice-text,.option span:last-child,.ro,.history-stem,.history-choices li span:last-child,.extracted-content,.textLayer span,.flashcard-front,.flashcard-back';
 const WORD = /^[a-z]+(?:'[a-z]+)*$/i;
 let dictionary, timer, selectionTimer, press = null, request = 0, panel;
 const normal = word => word.trim().replaceAll('’', "'").toLowerCase();

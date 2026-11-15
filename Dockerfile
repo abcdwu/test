@@ -1,8 +1,9 @@
 FROM node:24-alpine
 WORKDIR /app
-COPY package.json common.js mistake-store.js progress.js highlight-core.js ./
+COPY package.json common.js mistake-store.js progress.js highlight-core.js study-core.js ./
 COPY server/ ./server/
 COPY source.html source-viewer.js public-assets.js source-chunks.js word-translation.js index.html mistakes.html highlights.js highlight-core.js styles.css common.js bank-loader.js practice.js mistakes.js browser-store.js mistake-store.js progress.js cloud-sync.js pdf-source.js cloud-config.json ./public/
+COPY study-core.js study-ui.js notebook.html notebook.js ./public/
 COPY bank/ ./public/bank/
 COPY dictionary/ ./public/dictionary/
 COPY sources/ ./public/sources/

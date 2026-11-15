@@ -1,17 +1,19 @@
 import { esc } from './common.js?v=3';
-import { mistakeStore } from './browser-store.js?v=12';
+import { mistakeStore } from './browser-store.js?v=14';
 import { highlightKey } from './highlight-core.js?v=1';
 
 const SESSION_KEY = 'mbe.cloud.session.v1';
 const panel = document.getElementById('sync-panel');
-let apiBase = '', session = null, syncing = false, queued = false, merging = false;
-let status = '错题、练习记录与高亮自动保存在当前浏览器。', showLogin = false;
+let apiBase = '', session = null, queued = false, merging = false;
+let status = '错题、记录、高亮、笔记与闪卡自动保存在当前浏览器。', showLogin = false;
 let remoteRevision = null;
+let runningSync = null;
 const uploaded = new Map();
 const uploadedAttempts = new Map();
 const uploadedHighlights = new Map();
+const uploadedStudy = new Map();
 
-function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); uploadedHighlights.clear(); }
+function resetSync() { remoteRevision = null; uploaded.clear(); uploadedAttempts.clear(); uploadedHighlights.clear(); uploadedStudy.clear(); }
 
 function render() {
   if (!panel) return;
@@ -65,18 +67,24 @@ async function api(path, { method = 'POST', body, token = session?.token } = {})
   return response.json();
 }
 
-export async function sync() {
-  if (!apiBase || !session) return;
-  if (syncing) { queued = true; return; }
+export function sync() {
+  if (!apiBase || !session) return Promise.resolve();
+  if (runningSync) { queued = true; return runningSync; }
+  runningSync = (async () => {
+    do { queued = false; await syncPass(); } while (queued && apiBase && session);
+  })().finally(() => { runningSync = null; });
+  return runningSync;
+}
+async function syncPass() {
   const activeSession = session;
-  syncing = true;
   status = '正在自动同步数据…'; render();
   try {
     await mistakeStore.importHighlightCache();
     const outgoing = mistakeStore.read().filter(entry => uploaded.get(entry.question.id) !== JSON.stringify(entry));
     const attempts = mistakeStore.readAttempts().filter(attempt => uploadedAttempts.get(attempt.id) !== JSON.stringify(attempt));
     const highlights = mistakeStore.readHighlights().filter(record => uploadedHighlights.get(highlightKey(record)) !== JSON.stringify(record));
-    const result = await api('/api/sync', { body: { entries: outgoing, attempts, highlights, revision: remoteRevision } });
+    const study = mistakeStore.readStudy().filter(record => uploadedStudy.get(record.questionId) !== JSON.stringify(record));
+    const result = await api('/api/sync', { body: { entries: outgoing, attempts, highlights, study, revision: remoteRevision } });
     if (session !== activeSession) return;
     merging = true;
     const before = JSON.stringify(mistakeStore.read());
@@ -91,10 +99,15 @@ export async function sync() {
       await mistakeStore.mergeHighlights(result.highlights);
       for (const record of [...highlights, ...result.highlights]) uploadedHighlights.set(highlightKey(record), JSON.stringify(record));
     }
+    if (Array.isArray(result.study)) {
+      await mistakeStore.mergeStudy(result.study);
+      for (const record of [...study, ...result.study]) uploadedStudy.set(record.questionId, JSON.stringify(record));
+    }
     for (const entry of [...outgoing, ...result.entries]) uploaded.set(entry.question.id, JSON.stringify(entry));
     remoteRevision = result.revision;
     merging = false;
-    status = `错题已自动同步（含练习记录与高亮） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    status = `错题已自动同步（含记录、高亮、笔记与闪卡） · ${new Date(result.syncedAt).toLocaleTimeString('zh-CN')}`;
+    if (study.length && !Array.isArray(result.study)) status = '笔记与闪卡已保存在本机，服务更新后会自动补传。';
     if (highlights.length && !Array.isArray(result.highlights)) status = '错题已同步，高亮暂仅保存在本机，服务更新后会自动补传。';
     if (attempts.length && !Array.isArray(result.attempts)) status = '错题已同步，累计统计暂仅保存在本机，服务更新后会自动补传。';
     if (JSON.stringify(mistakeStore.readHighlights()) !== beforeHighlights) window.dispatchEvent(new Event('mbe:highlights-changed'));
@@ -107,8 +120,7 @@ export async function sync() {
       status = '云端登录已到期，请重新输入密码。本机错题已保留。';
     } else { status = '暂未同步，数据已保存在本机，联网后会自动重试。'; }
   } finally {
-    merging = false; syncing = false; render();
-    if (queued) { queued = false; setTimeout(sync, 500); }
+    merging = false; render();
   }
 }
 

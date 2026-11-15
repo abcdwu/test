@@ -31,3 +31,7 @@
 !word-translation.js
 !dictionary/
 !dictionary/**
+!study-core.js
+!study-ui.js
+!notebook.html
+!notebook.js

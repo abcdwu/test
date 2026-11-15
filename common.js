@@ -103,11 +103,14 @@ export function reviewQuestion(question, selected) {
     <div class="result-options">${question.choices.map((choice, index) => {
       const letter = 'ABCD'[index];
       return `<div class="ro ${letter === question.answer ? 'correct' : selected === letter ? 'wrong' : ''}">
-        ${letter}. ${esc(choice)} ${letter === question.answer ? ' ✓ 正确答案' : selected === letter ? ' ✕ 你的答案' : ''}
+        <span class="review-letter">${letter}.</span> <span class="choice-text" data-question-id="${esc(question.id + ':choice-' + letter)}">${esc(choice)}</span> ${letter === question.answer ? '<span class="choice-verdict"> ✓ 正确答案</span>' : selected === letter ? '<span class="choice-verdict"> ✕ 你的答案</span>' : ''}
       </div>`;
     }).join('')}</div>
     ${questionSource(question)}
-    ${sourcePages(question, 'explanation').length
+    ${explanationContent(question)}`;
+}
+export function explanationContent(question) {
+  return `${optionAnalysis(question)}${sourcePages(question, 'explanation').length
       ? `<div class="explain source-explanation"><strong>完整原文解析</strong>
           <p class="source-note">以下保留原始 PDF 的全部解析页，包括图表。页码为 PDF 文件页码。</p>
           ${originalPages(question, 'explanation')}
@@ -117,4 +120,28 @@ export function reviewQuestion(question, selected) {
           </details>
         </div>`
       : `<div class="explain"><strong>原文解析</strong>\n\n${esc(question.explanation)}</div>`}`;
+}
+
+// Only explicit line-start choice headings are grouped. Inline references and
+// unlabelled paragraphs are never guessed into an incorrect option's analysis.
+export function explanationExcerpts(text) {
+  const markers = [...text.matchAll(/^\(Choices?\s+([A-D](?:(?:,\s*|\s+(?:and|or|&)\s+)[A-D])*)\)/gm)];
+  if (!markers.length) return null;
+  const stop = text.search(/^Educational objective\s*:|^References\s*$|^Copyright\s/gm);
+  const end = stop >= markers[0].index ? stop : text.length;
+  const options = Object.fromEntries([...'ABCD'].map(letter => [letter, []]));
+  markers.forEach((marker, index) => {
+    if (marker.index >= end) return;
+    const excerpt = text.slice(marker.index, Math.min(markers[index + 1]?.index ?? end, end)).trim();
+    for (const letter of marker[1].match(/[A-D]/g)) options[letter].push(excerpt);
+  });
+  return { main: text.slice(0, markers[0].index).trim(), options };
+}
+function optionAnalysis(question) {
+  const excerpts = explanationExcerpts(question.explanation);
+  if (!excerpts) return '';
+  return `<details class="option-analysis"><summary>按 A / B / C / D 查看原文分析</summary><p class="source-note">仅按原文明确的选项标题整理，未补写法律解释。文字与图表请结合下方完整原页核对。</p>${[...'ABCD'].map(letter => {
+    const parts = excerpts.options[letter], main = letter === question.answer && !parts.length ? excerpts.main : '';
+    return `<details class="analysis-part"><summary>${letter} · ${letter === question.answer ? '正确答案' : '其他选项'}</summary><div class="extracted-content">${esc(parts.length ? parts.join('\n\n') : main || '原文未单独标记此选项的分析，请查看下方完整原文解析。')}</div></details>`;
+  }).join('')}</details>`;
 }

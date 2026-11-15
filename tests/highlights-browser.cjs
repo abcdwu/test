@@ -50,7 +50,7 @@ async function openQuestion(page, id) {
         const button = page.locator(`[data-highlight="${action}"]`).first();
         if (mobile) await button.tap(); else await button.click();
       };
-      assert.equal(await page.locator('[data-highlight="add"]').isDisabled(), true);
+      assert.equal(await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="add"]').isDisabled(), true);
       await select(page, 2, 20); await press('add');
       assert.deepEqual(await marks(page), [stem.slice(2, 20)]);
       await select(page, 12, 30); await press('add');
@@ -59,7 +59,7 @@ async function openQuestion(page, id) {
       assert.deepEqual(await marks(page), [stem.slice(2, 8), stem.slice(15, 30)]);
       assert.equal(await page.locator('.question').textContent(), stem);
       await select(page, 0, 3, true);
-      assert.equal(await page.locator('[data-highlight="add"]').isDisabled(), true);
+      assert.equal(await page.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="add"]').isDisabled(), true);
       const wrongChoice = ('ABCD'.indexOf(bank.find(q => q.id === id).answer) + 1) % 4;
       await page.locator(`[data-choice="${wrongChoice}"]`).click();
       if (await page.locator('#next').count()) {
@@ -82,7 +82,7 @@ async function openQuestion(page, id) {
       const wrong = page.locator('.mistake').filter({ has: page.locator(`.question[data-question-id="${id}"]`) });
       await wrong.locator('summary').first().click();
       assert.deepEqual(await wrong.locator('.question mark').allTextContents(), [stem.slice(2, 8), stem.slice(15, 30)]);
-      await wrong.locator('[data-highlight="clear"]').click();
+      await wrong.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="clear"]').click();
       assert.deepEqual(await wrong.locator('.question mark').allTextContents(), []);
       await openQuestion(page, id); assert.deepEqual(await marks(page), []);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -91,7 +91,7 @@ async function openQuestion(page, id) {
       const other = await context.newPage(); await openQuestion(other, id);
       await select(page, 1, 9); await press('add');
       await other.waitForFunction(() => document.querySelectorAll('.question mark').length === 1);
-      await other.locator('[data-highlight="clear"]').click();
+      await other.locator('.highlight-tools:not(.choice-highlight-tools) [data-highlight="clear"]').click();
       await page.waitForFunction(() => document.querySelectorAll('.question mark').length === 0);
       await page.evaluate(id => localStorage.setItem('mbe-highlights:v1:' + id, JSON.stringify({ text: 'different stem', ranges: [[0, 5]] })), id);
       await openQuestion(page, id); assert.deepEqual(await marks(page), []);

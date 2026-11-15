@@ -22,6 +22,7 @@ export function validateAttempts(attempts) {
     if (attempt.details !== undefined) {
       const details = attempt.details;
       if (!details || !['bank', 'mistakes'].includes(details.source)
+        || details.studyMode !== undefined && !['exam', 'tutor'].includes(details.studyMode)
         || !['natural', 'countdown'].includes(details.timerMode)
         || typeof details.startedAt !== 'string' || !Number.isFinite(Date.parse(details.startedAt))
         || Date.parse(details.startedAt) > Date.parse(attempt.completedAt)
@@ -34,6 +35,9 @@ export function validateAttempts(attempts) {
           || typeof question.correct !== 'boolean' || !Number.isSafeInteger(question.round) || question.round < 1
           || !(question.selected === null || /^[ABCD]$/.test(question.selected)) || question.selected === null && question.correct
           || rounds.has(question.subject) && rounds.get(question.subject) !== question.round) throw new Error('练习题目记录格式不正确');
+        if (question.flagged !== undefined && typeof question.flagged !== 'boolean'
+          || question.excluded !== undefined && (!Array.isArray(question.excluded) || question.excluded.length > 4
+            || new Set(question.excluded).size !== question.excluded.length || question.excluded.some(item => !Number.isInteger(item) || item < 0 || item > 3))) throw new Error('题目标记格式不正确');
         questions.add(question.id); rounds.set(question.subject, question.round);
         const value = totals.get(question.subject) ?? { total: 0, correct: 0 };
         value.total++; if (question.correct) value.correct++;
@@ -60,7 +64,10 @@ export function createAttempt(questions, answers, id = crypto.randomUUID(), comp
   if (options) attempt.details = {
     startedAt: options.startedAt, durationSeconds: options.durationSeconds, source: options.source, timerMode: options.timerMode || 'natural',
     questions: questions.map((question, index) => ({ id: question.id, subject: question.subject, number: index + 1,
-      selected: answerLetter(answers[index]), correct: answerLetter(answers[index]) === question.answer, round: options.rounds[question.subject] })),
+      selected: answerLetter(answers[index]), correct: answerLetter(answers[index]) === question.answer, round: options.rounds[question.subject],
+      ...(options.studyMode ? { flagged: Boolean(options.flags?.[index] ?? options.questions?.[index]?.flagged),
+        excluded: [...(options.excluded?.[index] ?? options.questions?.[index]?.excluded ?? [])].sort() } : {}) })),
+    ...(options.studyMode ? { studyMode: options.studyMode } : {}),
   };
   validateAttempts([attempt]); return attempt;
 }
@@ -82,8 +89,8 @@ export function mergeAttempts(previous, incoming) {
 export function sameAttempt(left, right) {
   const signature = attempt => JSON.stringify([attempt.id, attempt.completedAt, attempt.correct, attempt.total,
     attempt.subjects.map(item => [item.subject, item.correct, item.total]).sort((a, b) => a[0].localeCompare(b[0])),
-    attempt.details ? [attempt.details.startedAt, attempt.details.durationSeconds, attempt.details.source, attempt.details.timerMode,
-      attempt.details.questions.map(item => [item.id, item.subject, item.number, item.selected, item.correct, item.round])] : null]);
+    attempt.details ? [attempt.details.startedAt, attempt.details.durationSeconds, attempt.details.source, attempt.details.timerMode, attempt.details.studyMode || 'exam',
+      attempt.details.questions.map(item => [item.id, item.subject, item.number, item.selected, item.correct, item.round, item.flagged || false, [...(item.excluded || [])].sort()])] : null]);
   return signature(left) === signature(right);
 }
 
