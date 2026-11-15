@@ -5,7 +5,7 @@ import { studyHistory, mountStudyTools, studyTools, flushStudyNotes } from './st
 import { mountSourcePages, unmountSourcePages } from './pdf-source.js?v=4';
 import { mountHighlights } from './highlights.js?v=4';
 import './word-translation.js?v=2';
-import './cloud-sync.js?v=14';
+import './cloud-sync.js?v=15';
 const app = document.getElementById('app'), focus = new URLSearchParams(location.search).get('question');
 let subject = 'all', type = 'all';
 const loaded = new Map();
