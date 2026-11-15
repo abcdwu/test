@@ -145,6 +145,16 @@ export function orderQuestionsBySource(questions) {
   });
 }
 
+// Repeating a question must never remove it from the available list.
+// Start is a 1-based position in the stable descending order, independent of
+// the user's previous attempts, browser, or device.
+export function orderedPractice(questions, start = 1, count = questions.length) {
+  if (!Number.isSafeInteger(start) || start < 1 || !Number.isSafeInteger(count) || count < 1) {
+    throw new RangeError('练习起始位置和题目数量必须是正整数');
+  }
+  return orderQuestionsBySource(questions).slice(start - 1, start - 1 + count);
+}
+
 export function remainingPool(questions, attempts, source = 'bank') {
   const counts = {};
   for (const question of questions) counts[question.subject] = (counts[question.subject] ?? 0) + 1;
