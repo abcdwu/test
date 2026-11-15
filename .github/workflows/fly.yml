@@ -1,46 +1,25 @@
 name: Deploy private mistake sync
 
+# Fly.io hosts the authoritative sync API and the persistent SQLite volume.
+# Publish the same client revision as GitHub Pages on every main update.
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - server/**
-      - bank/**
-      - bank-loader.js
-      - highlights.js
-      - highlight-core.js
-      - pdf-source.js
-      - public-assets.js
-      - source-chunks.js
-      - source-viewer.js
-      - word-translation.js
-      - study-core.js
-      - study-ui.js
-      - notebook.html
-      - notebook.js
-      - source.html
-      - dictionary/**
-      - sources/pages/**
-      - fly.toml
-      - progress.js
-      - mistake-store.js
-      - Dockerfile
-      - .dockerignore
-      - .github/workflows/fly.yml
 
 permissions:
   contents: read
 
+# Do not interrupt an in-flight database-backed deploy. GitHub keeps the newest
+# pending run and deploys it after the current one completes.
 concurrency:
   group: fly-mistake-sync
   cancel-in-progress: false
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy-sync]')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,8 +36,12 @@ jobs:
           test -n "$FLY_API_TOKEN" || { echo 'Add repository secret FLY_API_TOKEN first.'; exit 1; }
           test "${#LOGIN_PASSWORD}" -ge 1 || { echo 'Set LOGIN_PASSWORD to at least 1 character.'; exit 1; }
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - name: Create persistent storage and deploy one machine
+      - name: Deploy code while preserving the mounted SQLite data volume
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
         run: python3 scripts/deploy_fly.py
+      - name: Check two independent sessions on the live sync API (read-only)
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+        run: node tests/live-sync-check.mjs
