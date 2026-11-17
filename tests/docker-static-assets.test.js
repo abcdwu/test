@@ -14,5 +14,5 @@ test('Fly Docker build context retains every explicitly copied root asset', () =
       assert.ok(allowed.has('!' + file), `Docker context excludes required asset: ${file}`);
     }
   }
-  assert.match(dockerfile, /question-translation\.js/);
+  assert.doesNotMatch(dockerfile, /(?:word|question)-translation\.js/, 'Unused translation modules must not ship with the Fly runtime');
 });
