@@ -1,4 +1,3 @@
-import './word-translation.js?v=2';
 import { mountHighlights } from './highlights.js?v=4';
 import { studyTools, mountStudyTools, flushStudyNotes } from './study-ui.js?v=1';
 import { SUBJECTS, esc, loadBank, reviewQuestion, subjectLabel, subjectOptions } from './common.js?v=11';
