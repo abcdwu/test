@@ -28,8 +28,6 @@
 !source-viewer.js
 !source-chunks.js
 !public-assets.js
-!word-translation.js
-!question-translation.js
 !dictionary/
 !dictionary/**
 !study-core.js
