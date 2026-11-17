@@ -34,3 +34,15 @@ test('the backup serves the public app and bank with PDF ranges, but never priva
     assert.equal(badOrigin.status, 403);
   } finally { await new Promise(resolve => api.server.close(resolve)); api.closeDatabase(); }
 });
+
+test('translation event handlers are absent from every study view while highlighting stays enabled', () => {
+  for (const file of ['practice.js', 'mistakes.js', 'notebook.js', 'source-viewer.js']) {
+    const code = readFileSync(root + file, 'utf8');
+    assert.doesNotMatch(code, /import\s+['"]\.\/word-translation\.js|import\s+\{\s*translateQuestion\s*\}|#translate-question|requestTranslation\(/, file);
+  }
+  const practice = readFileSync(root + 'practice.js', 'utf8');
+  assert.doesNotMatch(practice, /translation-area|一键翻译成中文/);
+  assert.match(practice, /mountHighlights\(app\)/);
+  const highlights = readFileSync(root + 'highlights.js', 'utf8');
+  assert.match(highlights, /selectionchange|pointerdown|highlight|高亮/i);
+});
